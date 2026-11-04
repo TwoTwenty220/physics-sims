@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ซิงก์ Simulation จากโฟลเดอร์แผนของแต่ละรายวิชามาเป็นฉบับเว็บ แล้วสร้างหน้ารวม index.html
+"""ซิงก์ Simulation จากโฟลเดอร์แผนของแต่ละรายวิชามาเป็นฉบับเว็บ แล้วสร้างหน้ารวมรายวิชา <รหัส>/index.html และหน้าเลือกรายวิชา index.html
 
 ใช้: python3 sync.py   (รันจากที่ใดก็ได้)
 รายการ Simulation อยู่ใน sims.json ต้นฉบับอยู่ในโฟลเดอร์แผนเสมอ ห้ามแก้ไฟล์ในโฟลเดอร์นี้โดยตรง
@@ -63,7 +63,7 @@ def main():
         title = re.search(r"<title>(.*?)</title>", text, re.S)
         unit, plan = UNIT.search(s["source"]), PLAN.search(s["source"])
         entries.append({
-            "course": s["course"], "href": f"{s['course']}/{s['slug']}.html",
+            "course": s["course"], "href": f"{s['slug']}.html",
             "title": title.group(1).strip() if title else s["slug"],
             "unit": f"หน่วยที่ {unit.group(1)} {unit.group(2)}" if unit else "",
             "unit_no": int(unit.group(1)) if unit else 0,
@@ -75,32 +75,48 @@ def main():
     # ไฟล์ที่ไม่อยู่ใน sims.json แล้ว แจ้งให้ลบเองเพื่อไม่ให้ลิงก์เดิมหายโดยไม่ตั้งใจ
     for d in courses:
         for f in (REPO / d).glob("*.html") if (REPO / d).is_dir() else []:
-            if (d, f.stem) not in slugs:
+            if f.stem != "index" and (d, f.stem) not in slugs:
                 print(f"  เตือน: {d}/{f.name} ไม่อยู่ใน sims.json แล้ว ถ้าไม่ใช้ให้ลบไฟล์เอง")
 
-    (REPO / "index.html").write_text(render_index(cfg["courses"], entries), encoding="utf-8")
-    print(f"สร้าง index.html แล้ว ({len(entries)} Simulation)")
+    # หน้ารวมรายวิชา <id>/index.html แจกนักเรียนแต่ละวิชาแยกกัน สร้างทุกรายวิชาแม้ยังไม่มี Simulation เพื่อให้ลิงก์ใช้ได้ตั้งแต่แรก
+    counts = {}
+    for c in cfg["courses"]:
+        items = [x for x in entries if x["course"] == c["id"]]
+        counts[c["id"]] = len(items)
+        (REPO / c["id"]).mkdir(exist_ok=True)
+        (REPO / c["id"] / "index.html").write_text(render_course(c, items), encoding="utf-8")
+        print(f"สร้าง {c['id']}/index.html แล้ว ({len(items)} Simulation)")
+    (REPO / "index.html").write_text(render_root(cfg["courses"], counts), encoding="utf-8")
+    print("สร้าง index.html (หน้าเลือกรายวิชา) แล้ว")
 
 
-def render_index(courses, entries):
+def render_course(c, items):
     e = html.escape
-    parts = []
-    for c in courses:
-        items = sorted((x for x in entries if x["course"] == c["id"]), key=lambda x: x["plan_no"])  # ในแผนเดียวกันเรียงตามลำดับใน sims.json
-        if not items:
-            continue
-        parts.append(f'<section><h2>{e(c["title"])}</h2>')
-        unit = None
-        for x in items:
-            if x["unit"] != unit:
-                if unit is not None:
-                    parts.append("</ul>")
-                unit = x["unit"]
-                parts.append(f"<h3>{e(unit)}</h3><ul>")
-            parts.append(f'<li><a href="{e(x["href"])}"><span class="t">{e(x["title"])}</span>'
-                         f'<span class="m">{e(x["plan"])}</span></a></li>')
-        parts.append("</ul></section>")
-    return INDEX.replace("{{BODY}}", "\n".join(parts))
+    items = sorted(items, key=lambda x: x["plan_no"])  # ในแผนเดียวกันเรียงตามลำดับใน sims.json
+    parts = [] if items else ['<p class="sub">ยังไม่มี Simulation</p>']
+    unit = None
+    for x in items:
+        if x["unit"] != unit:
+            if unit is not None:
+                parts.append("</ul>")
+            unit = x["unit"]
+            parts.append(f"<h3>{e(unit)}</h3><ul>")
+        parts.append(f'<li><a href="{e(x["href"])}"><span class="t">{e(x["title"])}</span>'
+                     f'<span class="m">{e(x["plan"])}</span></a></li>')
+    if items:
+        parts.append("</ul>")
+    return page("Simulation " + c["title"], "\n".join(parts))
+
+
+def render_root(courses, counts):
+    e = html.escape
+    rows = "".join(f'<li><a href="{e(c["id"])}/"><span class="t">{e(c["title"])}</span>'
+                   f'<span class="m">{counts[c["id"]]} Simulation</span></a></li>' for c in courses)
+    return page("Simulation ฟิสิกส์", f"<ul>{rows}</ul>")
+
+
+def page(title, body):
+    return INDEX.replace("{{TITLE}}", html.escape(title)).replace("{{BODY}}", body)
 
 
 INDEX = """<!doctype html>
@@ -108,7 +124,7 @@ INDEX = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Simulation ฟิสิกส์</title>
+<title>{{TITLE}}</title>
 <!-- ไฟล์นี้สร้างโดย sync.py ห้ามแก้เอง -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -138,7 +154,7 @@ a:active, a:hover { border-color: var(--accent); }
 </head>
 <body>
 <main>
-<h1>Simulation ฟิสิกส์</h1>
+<h1>{{TITLE}}</h1>
 <p class="sub">โรงเรียนมัธยมสาธิตมหาวิทยาลัยนเรศวร · แตะชื่อเพื่อเปิด ใช้ได้ทั้ง iPad โทรศัพท์ และคอมพิวเตอร์</p>
 {{BODY}}
 </main>
