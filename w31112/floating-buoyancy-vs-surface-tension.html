@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ลอยด้วยแรงพยุงหรือแรงดึงผิว</title>
+<!--
+  Simulation เกี่ยวกับการลอยด้วยแรงพยุงเทียบกับการลอยด้วยแรงดึงผิว (ก้อนไม้กับเข็มเย็บผ้า)
+  ฟิสิกส์ 2 (ว31112) แผนที่ 01 ครั้งที่ 2 หัวข้อ 17.2.1 ใช้ประกอบสไลด์ "ชวนคิด: เข็มบนผิวน้ำ" และ "ทิศของแรงดึงผิว"
+  ที่มาในหนังสือ
+    กิจกรรมลองทำดู (วางเข็มเย็บผ้า ลวดเสียบกระดาษ หรือใบมีดโกนบนผิวน้ำ) รูป 17.5–17.6: หนังสือเรียน ฟิสิกส์ เล่ม 5 สสวท. หน้า 203–204
+    ทิศของแรงดึงผิว และความเข้าใจคลาดเคลื่อนข้อ 3 (ใบมีดโกนหรือเข็มลอยด้วยแรงพยุง): คู่มือครู ฟิสิกส์ เล่ม 5 หน้า 238
+    ความตึงผิว gamma = F/l และตาราง 17.2 (น้ำ 0, 20, 100 องศาเซลเซียส): หนังสือเรียน ฟิสิกส์ เล่ม 5 หน้า 211
+    แรงพยุง F_B = rho V g (สมการ 17.11): หนังสือเรียน ฟิสิกส์ เล่ม 5 หน้า 235
+  ค่าที่ไม่มีในหนังสือ (ค่าประมาณ)
+    ความหนาแน่นเหล็ก 7850 kg/m^3 (ค่าเดียวกับ Simulation ลูกเหล็กกลม) · ไม้ 600 kg/m^3 · น้ำ 1000 kg/m^3 ทุกอุณหภูมิ
+    ขนาดวัตถุ: เข็มยาว 4.0 cm · ลวดเสียบกระดาษยาวรวม 10 cm · ใบมีดโกนพื้นที่ 8.0 cm^2 หนา 0.10 mm ขอบยาว 13 cm
+    น้ำผสมสบู่ 0.025 N/m (ขึ้นกับความเข้มข้น)
+  แบบจำลอง
+    แรงดึงผิวกระทำตามแนวผิวน้ำ ตั้งฉากกับขอบที่ผิวน้ำสัมผัส ขนาดรวม gamma*l (l = ความยาวขอบที่ผิวน้ำสัมผัส เข็มมีสองข้าง l = 2L)
+    ผิวน้ำทำมุม theta กับแนวระดับ แรงดึงผิวในแนวดิ่ง = gamma*l*sin(theta) ซึ่งมากที่สุดเท่ากับ gamma*l เมื่อ theta = 90 องศา
+    ขณะลอยบนผิวน้ำไม่นำแรงพยุงของเข็มมาคิด (ไม่เกิน rho*V*g ของเข็มทั้งเล่ม)
+    รูปร่างผิวน้ำที่ยุบใช้สมการผิวโค้งสองมิติ z = 2*lc*sin(theta/2), lc = sqrt(gamma/(rho*g)) เพื่อวาดภาพและหาความลึกที่ผิวน้ำขาด (นอกหลักสูตร)
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #4A2033; --secondary: #1E6670; --accent: #E2772E; --alert: #AD3426;
+  --ink: #2B2427; --muted: #7a6d72; --paper: #FCF8F3; --card: #ffffff; --line: #e6dcd3;
+  --glass-edge: #8aa3ad; --water: rgba(30,102,112,0.20); --water-top: #1E6670;
+  --f-w: #AD3426; --f-b: #1F5FA8; --f-s: #7B3FA0; --f-h: #7a6d72;
+  --wood: #C8955C; --wood-d: #8a5a2b; --steel: #9aa3a9; --steel-d: #5d666c;
+  --good: #2E7D4F; --bad: #AD3426;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #f0c6d6; --secondary: #6cc3cc; --accent: #f29a5c; --alert: #ef7b6c;
+    --ink: #f1e9e4; --muted: #b3a6ab; --paper: #1d1719; --card: #2a2225; --line: #43383c;
+    --glass-edge: #7d949c; --water: rgba(108,195,204,0.20); --water-top: #6cc3cc;
+    --f-w: #ef7b6c; --f-b: #7fb0ef; --f-s: #c79be0; --f-h: #b3a6ab;
+    --wood: #c69a68; --wood-d: #8f633a; --steel: #b8c0c5; --steel-d: #7c868c;
+    --good: #7ccf98; --bad: #ef7b6c;
+  }
+}
+:root[data-theme="dark"] {
+  --primary: #f0c6d6; --secondary: #6cc3cc; --accent: #f29a5c; --alert: #ef7b6c;
+  --ink: #f1e9e4; --muted: #b3a6ab; --paper: #1d1719; --card: #2a2225; --line: #43383c;
+  --glass-edge: #7d949c; --water: rgba(108,195,204,0.20); --water-top: #6cc3cc;
+  --f-w: #ef7b6c; --f-b: #7fb0ef; --f-s: #c79be0; --f-h: #b3a6ab;
+  --wood: #c69a68; --wood-d: #8f633a; --steel: #b8c0c5; --steel-d: #7c868c;
+  --good: #7ccf98; --bad: #ef7b6c;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: "THSarabunLocal", "Sarabun", sans-serif; font-size: 21px; line-height: 1.35;
+}
+header { padding: 10px 20px 6px; border-bottom: 3px solid var(--accent); display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+header h1 { margin: 0; font-size: 34px; color: var(--primary); }
+header span { color: var(--muted); font-size: 19px; }
+main { display: grid; grid-template-columns: 280px minmax(0, 1fr) minmax(0, 1fr); gap: 14px; padding: 14px 16px; align-items: start; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-width: 0; }
+.card h2 { margin: 0 0 6px; font-size: 23px; color: var(--secondary); }
+.card h3 { margin: 10px 0 2px; font-size: 20px; color: var(--secondary); }
+label { display: block; margin-top: 8px; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.val { font-weight: 700; color: var(--primary); white-space: nowrap; }
+input[type=range] { width: 100%; accent-color: var(--accent); height: 30px; }
+select { width: 100%; font: inherit; font-size: 20px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+button { font: inherit; font-size: 20px; font-weight: 700; padding: 6px 8px; border-radius: 8px; border: none; cursor: pointer; line-height: 1.15; }
+.b-main { background: var(--accent); color: #fff; }
+.b-sec { background: var(--secondary); color: #fff; }
+.b-plain { background: var(--line); color: var(--ink); }
+.wide { grid-column: 1 / -1; }
+.check { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.check input { width: 22px; height: 22px; flex: none; accent-color: var(--accent); }
+.note { font-size: 17px; color: var(--muted); margin: 8px 0 0; }
+.panel h2 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.panel h2 small { font-size: 18px; color: var(--muted); font-weight: 400; }
+canvas.tank { display: block; width: 100%; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; cursor: grab; }
+canvas.inset { display: block; width: 100%; border: 1px solid var(--line); border-radius: 8px; margin-top: 6px; }
+.status { margin-top: 6px; padding: 6px 10px; border-radius: 8px; background: var(--paper); border-left: 5px solid var(--secondary); min-height: 2.9em; }
+.status b { color: var(--primary); }
+.status .ev { display: block; font-size: 18px; color: var(--alert); }
+.cap { font-size: 18px; color: var(--muted); margin-top: 2px; }
+table { width: 100%; border-collapse: collapse; font-size: 19px; }
+th, td { border-bottom: 1px solid var(--line); padding: 3px 6px; text-align: left; vertical-align: top; }
+th { color: var(--secondary); }
+td.num { text-align: right; white-space: nowrap; font-weight: 700; }
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+#cmp { grid-column: 1 / -1; }
+#cmp td:first-child { color: var(--secondary); font-weight: 700; }
+.ok { color: var(--good); font-weight: 700; }
+.ng { color: var(--bad); font-weight: 700; }
+.tblwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+button, select, input, label { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#jsWarn { margin: 10px 16px 0; padding: 8px 14px; border-radius: 8px; background: var(--alert); color: #fff; font-size: 20px; }
+#jsErr { font-size: 15px; margin-top: 4px; word-break: break-all; }
+@media (min-width: 1001px) and (max-width: 1279px) {
+  main { grid-template-columns: 250px minmax(0, 1fr) minmax(0, 1fr); gap: 10px; padding: 10px; }
+  body { font-size: 19px; }
+}
+.cvbox { position: relative; }
+.cmpBtn, .cmpClose { display: none; }
+/* จอแนวนอน 16:9 และ 4:3 (โปรเจกเตอร์ ทีวี): แสดงทั้งหมดในหน้าจอเดียว ตัวอักษรขยายตามความสูงจอ
+   ตารางเปรียบเทียบเปิดเป็นหน้าต่างซ้อนจากปุ่มในแผงตั้งค่า */
+@media (min-width: 1000px) and (min-aspect-ratio: 5/4) and (min-height: 600px) {
+  body { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; font-size: clamp(15px, 2.3vh, 28px); }
+  header { padding: 0.25em 0.8em 0.15em; gap: 0.6em; }
+  header h1 { font-size: 1.4em; }
+  header span { font-size: 0.85em; }
+  main { flex: 1 1 auto; min-height: 0; grid-template-columns: 12.5em minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+         gap: 0.5em; padding: 0.5em 0.6em; align-items: stretch; }
+  #ctrl { overflow-y: auto; min-height: 0; }
+  .card { padding: 0.35em 0.6em; }
+  .card h2 { font-size: 1.08em; margin-bottom: 0.15em; }
+  .panel h2 small { font-size: 0.78em; }
+  label { margin-top: 0.25em; }
+  select { font-size: 0.95em; padding: 0 0.3em; }
+  button { font-size: 0.92em; padding: 0.2em 0.4em; }
+  .btns { margin-top: 0.3em; gap: 0.3em; }
+  input[type=range] { height: 1.3em; }
+  .check { margin-top: 0.25em; }
+  .check input { width: 1em; height: 1em; }
+  .note { font-size: 0.72em; margin-top: 0.3em; }
+  .panel { display: flex; flex-direction: column; min-height: 0; }
+  .panel .cvbox { flex: 1 1 0; min-height: 0; }
+  .panel .cvbox.ibox { flex: 0.5 1 0; margin-top: 0.3em; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .cvbox canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100% !important; }
+  canvas.inset { margin: 0; border: none; border-radius: 0; }
+  .status { margin-top: 0.3em; padding: 0.2em 0.5em; min-height: 2.7em; font-size: 0.88em; }
+  .status .ev { font-size: 0.88em; }
+  .cap { font-size: 0.75em; }
+  .panel table { font-size: 0.82em; }
+  .panel th, .panel td { padding: 0.05em 0.3em; }
+  #cmp { display: none; }
+  body.cmpOpen #cmp { display: block; position: fixed; left: 4vw; right: 4vw; top: 6vh; max-height: 88vh; overflow-y: auto; z-index: 20;
+                      box-shadow: 0 10px 40px rgba(0,0,0,0.35); font-size: 1em; }
+  body.cmpOpen::after { content: ""; position: fixed; inset: 0; background: rgba(0,0,0,0.42); z-index: 19; }
+  .cmpBtn { display: block; width: 100%; margin-top: 0.4em; }
+  .cmpHead { display: flex; justify-content: space-between; align-items: center; }
+  .cmpClose { display: inline-block; }
+}
+@media (max-width: 1000px) {
+  main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+  #ctrl { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); column-gap: 18px; }
+  #ctrl > h2 { grid-column: 1 / -1; }
+  body { font-size: 19px; }
+}
+@media (max-width: 680px) {
+  main { grid-template-columns: minmax(0, 1fr); padding: 12px 16px; }
+  header h1 { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>ลอยด้วยแรงพยุง หรือลอยด้วยแรงดึงผิว</h1>
+  <span>ฟิสิกส์ 2 (ว31112) · ความตึงผิวของของเหลว · เปรียบเทียบก้อนไม้กับเข็มบนผิวน้ำ</span>
+</header>
+<!-- ข้อความนี้ถูกซ่อนเมื่อโปรแกรมเริ่มทำงานสำเร็จ ถ้ายังเห็นอยู่ แสดงว่าโปรแกรมไม่ทำงาน -->
+<div id="jsWarn">
+  <b>Simulation ยังไม่ทำงาน</b> <span id="jsMsg">เบราว์เซอร์นี้ไม่รันโปรแกรม ให้เปิดลิงก์ด้วย Safari หรือ Chrome หรือดูจากจอที่ครูฉาย</span>
+  <div id="jsErr"></div>
+</div>
+<script>
+// แสดงข้อผิดพลาดบนหน้าจอ เพื่อให้แจ้งผู้สอนได้ (ไม่มีหน้าต่าง console บน iPad)
+window.onerror = function (msg, src, line, col) {
+  var w = document.getElementById("jsWarn"), e = document.getElementById("jsErr");
+  if (!w || !e) return;
+  w.style.display = "block";
+  w.firstElementChild.textContent = "Simulation ทำงานผิดพลาด";
+  document.getElementById("jsMsg").textContent = "กรุณาถ่ายภาพหน้าจอนี้ส่งครู";
+  e.textContent = "ข้อผิดพลาด: " + msg + " (บรรทัด " + line + ":" + col + ") · " + navigator.userAgent;
+};
+</script>
+<main>
+  <section class="card" id="ctrl" aria-label="ตั้งค่า">
+    <h2>ตั้งค่า</h2>
+    <div>
+      <div class="btns" style="margin-top:0">
+        <button class="b-main wide" id="bPlace">วางอย่างแผ่วเบา</button>
+        <button class="b-sec" id="bPress">กดลงใต้น้ำ</button>
+        <button class="b-sec" id="bDrop">ปล่อยจากที่สูง</button>
+        <button class="b-sec" id="bSoap">หยดน้ำสบู่</button>
+        <button class="b-plain" id="bReset">เริ่มใหม่</button>
+      </div>
+      <div class="check"><input type="checkbox" id="showF" checked><label for="showF" style="margin:0">แสดงแรงที่กระทำต่อวัตถุ</label></div>
+    </div>
+    <div>
+      <label>ของเหลว<select id="liq"></select></label>
+      <label><div class="row"><span>ความตึงผิว γ</span><span class="val" id="gOut"></span></div>
+        <input type="range" id="g" min="0" max="0.08" step="0.0001" value="0.0728"></label>
+    </div>
+    <div>
+      <label>วัตถุในภาชนะขวา<select id="obj">
+        <option value="needle">เข็มเย็บผ้า</option>
+        <option value="clip">ลวดเสียบกระดาษ</option>
+        <option value="blade">ใบมีดโกน</option>
+      </select></label>
+      <label id="dRow"><div class="row"><span>เส้นผ่านศูนย์กลางลวด</span><span class="val" id="dOut"></span></div>
+        <input type="range" id="d" min="0.4" max="2.0" step="0.1" value="1.0"></label>
+      <label>ความเร็วในการเล่น<select id="sp">
+        <option value="1">ตามจริง (×1)</option>
+        <option value="0.5" selected>ช้าลง 2 เท่า (×0.5)</option>
+        <option value="0.25">ช้าลง 4 เท่า (×0.25)</option>
+        <option value="0.1">ช้าลง 10 เท่า (×0.1)</option>
+      </select></label>
+    </div>
+    <div>
+      <p class="note">ปุ่มทำงานกับทั้งสองภาชนะพร้อมกัน · กดลงใต้น้ำคือกดลงลึก 3 cm แล้วปล่อย · ปล่อยจากที่สูงคือปล่อยจากระดับ 1.5 cm เหนือผิวน้ำ · แตะค้างที่วัตถุแล้วลากขึ้นลงเพื่อวางหรือกดเองได้</p>
+      <button class="b-plain cmpBtn" id="bCmp">ตารางเปรียบเทียบการลอยสองแบบ</button>
+    </div>
+  </section>
+
+  <section class="card panel" aria-label="ก้อนไม้">
+    <h2>ก้อนไม้ <small>ความหนาแน่นน้อยกว่าน้ำ</small></h2>
+    <div class="cvbox"><canvas class="tank" id="cvL"></canvas></div>
+    <div class="status" id="stL" aria-live="polite"></div>
+    <table id="roL"></table>
+  </section>
+
+  <section class="card panel" aria-label="วัตถุโลหะ">
+    <h2><span id="nameR">เข็มเย็บผ้า</span> <small>ความหนาแน่นมากกว่าน้ำ</small></h2>
+    <div class="cvbox"><canvas class="tank" id="cvR"></canvas></div>
+    <div class="status" id="stR" aria-live="polite"></div>
+    <div class="cvbox ibox"><canvas class="inset" id="cvI" aria-label="ภาพตัดขวางขยายบริเวณผิวน้ำที่สัมผัสวัตถุ"></canvas></div>
+    <div class="cap" id="capI"></div>
+    <table id="roR"></table>
+  </section>
+
+  <section class="card" id="cmp" aria-label="เปรียบเทียบ">
+    <h2 class="cmpHead">เปรียบเทียบการลอยสองแบบ <button class="b-plain cmpClose" id="bCmpClose">ปิด</button></h2>
+    <div class="tblwrap"><table id="cmpT"></table></div>
+    <p class="note">ค่าความตึงผิวของน้ำจากตาราง 17.2 หนังสือเรียนฟิสิกส์ เล่ม 5 · แรงพยุง F<sub>B</sub> = ρVg ·
+      ขนาดและมวลของวัตถุ ความหนาแน่นของไม้และเหล็ก และความตึงผิวของน้ำผสมสบู่เป็นค่าประมาณ ·
+      ภาพผิวน้ำที่ยุบวาดตามมาตราส่วนจริง ส่วนภาพตัดขวางขยายให้เห็นมุม θ</p>
+  </section>
+</main>
+
+<script>
+"use strict";
+// ---------- ค่าคงที่ (หน่วย SI) ----------
+const G = 9.8, RHO_W = 1000, RHO_S = 7850, RHO_WOOD = 600;
+const TANK_W = 0.09, AIR_H = 0.035, DEPTH = 0.05, GLASS = 0.0025;
+const WORLD_H = AIR_H + DEPTH + GLASS + 0.001;
+const XC = TANK_W / 2, START_GAP = 0.015, WOOD_A = 0.02;
+const H_STEP = 0.0004;          // ช่วงเวลาย่อยของการคำนวณ (s)
+const SINK_SPEED = 0.12;        // อัตราเร็วปลายของวัตถุโลหะที่จมในน้ำ (m/s)
+
+const LIQUIDS = [
+  { id: "w0", name: "น้ำ 0 °C (ตาราง 17.2)", g: 0.0756 },
+  { id: "w20", name: "น้ำ 20 °C (ตาราง 17.2)", g: 0.0728 },
+  { id: "w100", name: "น้ำ 100 °C (ตาราง 17.2)", g: 0.0589 },
+  { id: "soap", name: "น้ำผสมสบู่ (ค่าประมาณ)", g: 0.025 },
+  { id: "custom", name: "กำหนดค่าเอง", g: null }
+];
+const OBJS = {
+  needle: { name: "เข็มเย็บผ้า", shape: "rod", len: 0.04, vis: 0.04 },
+  clip:   { name: "ลวดเสียบกระดาษ", shape: "rod", len: 0.10, vis: 0.032 },
+  blade:  { name: "ใบมีดโกน", shape: "plate", vis: 0.043, width: 0.022, t: 0.0001, area: 8.0e-4, perim: 0.13 }
+};
+
+let gamma = 0.0728, speed = 0.5, showF = true, objKey = "needle", dia = 0.001;
+
+function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+function mN(F) { const v = F * 1000; return (Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2)) + " mN"; }
+
+// ---------- สมบัติของวัตถุโลหะ ----------
+function nProps() {
+  const o = OBJS[objKey];
+  if (o.shape === "rod") {
+    const r = dia / 2, V = Math.PI * r * r * o.len;
+    return { o, r, hw: r, V, m: RHO_S * V, ell: 2 * o.len, ellText: "2 × " + (o.len * 100).toFixed(1) + " cm" };
+  }
+  const V = o.area * o.t;
+  return { o, r: o.t / 2, hw: o.width / 2, V, m: RHO_S * V, ell: o.perim, ellText: "ขอบรอบใบมีด" };
+}
+let NP = nProps();
+
+// ---------- เรขาคณิตของผิวน้ำที่ยุบ ----------
+// lc = ความยาวคาพิลลารี · ความลึกของขอบที่ผิวน้ำสัมผัส z = 2 lc sin(θ/2) · θ มากที่สุด 90°
+function lc() { return Math.sqrt(Math.max(gamma, 1e-7) / (RHO_W * G)); }
+function zMax() { return Math.SQRT2 * lc(); }
+function thetaOfZ(z) { return 2 * Math.asin(clamp(z / (2 * lc()), 0, Math.SQRT1_2)); }
+function off(th) { return NP.o.shape === "rod" ? NP.r * Math.cos(th) : NP.r; }
+function ycOfZ(z) { return z - off(thetaOfZ(z)); }      // ตำแหน่งศูนย์กลางวัตถุเมื่อขอบสัมผัสลึก z
+function ycBreak() { return ycOfZ(zMax()); }            // ลึกกว่านี้ ผิวน้ำขาด
+function zOfYc(yc) {
+  let lo = 0, hi = zMax();
+  if (yc <= ycOfZ(0)) return 0;
+  if (yc >= ycOfZ(hi)) return hi;
+  for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (ycOfZ(mid) < yc) lo = mid; else hi = mid; }
+  return (lo + hi) / 2;
+}
+function Fsurf(z) { return gamma * NP.ell * Math.sin(thetaOfZ(z)); }   // แรงดึงผิวในแนวดิ่ง γℓ sinθ
+
+// รูปร่างผิวน้ำนอกขอบสัมผัส: ระยะ s จากขอบ → ความลึก
+function profileTable(th) {
+  if (th < 1e-3) return null;
+  const L = lc(), Fp = p => L * (Math.log(Math.tan(p / 4)) + 2 * Math.cos(p / 2));
+  const F0 = Fp(th), n = 48, S = [], Z = [];
+  for (let i = 0; i < n; i++) {
+    const p = th * Math.pow(1e-3 / th, i / (n - 1));
+    S.push(F0 - Fp(p)); Z.push(2 * L * Math.sin(p / 2));
+  }
+  return { S, Z };
+}
+function profAt(t, s) {
+  if (!t) return 0;
+  const S = t.S, Z = t.Z;
+  if (s <= 0) return Z[0];
+  for (let i = 1; i < S.length; i++) {
+    if (s <= S[i]) { const f = (s - S[i - 1]) / (S[i] - S[i - 1]); return Z[i - 1] + f * (Z[i] - Z[i - 1]); }
+  }
+  return 0;
+}
+
+// ---------- คลื่นที่ผิวน้ำ (เพื่อการแสดงผล) ----------
+const ripL = [], ripR = [];
+function addRipple(arr, x, v) {
+  const A = Math.min(0.0012, 0.003 * Math.abs(v));
+  if (A < 6e-5) return;
+  arr.push({ x, t: 0, A }); if (arr.length > 6) arr.shift();
+}
+function rippleAt(arr, x) {
+  let y = 0;
+  for (const r of arr) {
+    const d = Math.abs(x - r.x);
+    if (d > 0.25 * r.t) continue;
+    y += r.A * Math.exp(-r.t / 0.6) * Math.sin(2 * Math.PI * (d / 0.01 - r.t / 0.08)) / (1 + d / 0.01);
+  }
+  return y;
+}
+function ageRipples(arr, h) { for (const r of arr) r.t += h; while (arr.length && arr[0].t > 3) arr.shift(); }
+
+// ---------- ก้อนไม้ ----------
+const wood = {
+  yc: 0, v: 0, held: true, script: null,
+  m() { return RHO_WOOD * WOOD_A ** 3; },
+  mg() { return this.m() * G; },
+  bottomOff() { return WOOD_A / 2; },
+  startY() { return -START_GAP - WOOD_A / 2; },
+  lowerSpeed: 0.008,
+  sub() { return clamp(this.yc + WOOD_A / 2, 0, WOOD_A); },
+  FB() { return RHO_W * G * WOOD_A * WOOD_A * this.sub(); },
+  FBmax() { return RHO_W * G * WOOD_A ** 3; },
+  up() { return this.FB(); },
+  setPos(y) { this.yc = Math.min(y, DEPTH - WOOD_A / 2); this.v = 0; },
+  step(h) {
+    const a = WOOD_A, m = this.m(), s = this.sub(), k = RHO_W * G * a * a;
+    let F = this.mg() - this.FB();
+    if (s > 0) {
+      F -= 2 * 0.2 * Math.sqrt(k * m) * this.v;
+      F -= 0.5 * RHO_W * 1.0 * a * a * this.v * Math.abs(this.v) * (s / a);
+    }
+    const b0 = this.yc + a / 2, t0 = this.yc - a / 2;
+    this.v += F / m * h; this.yc += this.v * h;
+    const b1 = this.yc + a / 2, t1 = this.yc - a / 2;
+    if (((b0 < 0) !== (b1 < 0)) || ((t0 < 0) !== (t1 < 0))) addRipple(ripL, XC, this.v);
+    if (this.yc > DEPTH - a / 2) { this.yc = DEPTH - a / 2; if (this.v > 0) this.v = 0; }
+    if (this.yc < -AIR_H + a / 2) { this.yc = -AIR_H + a / 2; if (this.v < 0) this.v = 0; }
+  }
+};
+
+// ---------- วัตถุโลหะ (เข็ม ลวดเสียบกระดาษ ใบมีดโกน) ----------
+// mode: air = อยู่เหนือน้ำ · surf = อยู่บนผิวน้ำ (ผิวน้ำยุบ) · water = อยู่ใต้ผิวน้ำ · bottom = ที่ก้นภาชนะ
+const metal = {
+  mode: "air", yc: 0, v: 0, held: true, script: null, event: "",
+  mg() { return NP.m * G; },
+  bottomOff() { return NP.r; },
+  startY() { return -START_GAP - NP.r; },
+  lowerSpeed: 0.003,
+  FB() { return (this.mode === "water" || this.mode === "bottom") ? RHO_W * NP.V * G : 0; },
+  FBmax() { return RHO_W * NP.V * G; },
+  Fs() { return this.mode === "surf" ? Fsurf(zOfYc(this.yc)) : 0; },
+  up() { return this.Fs() + this.FB(); },
+  breakThrough(pushed) {
+    addRipple(ripR, XC, Math.max(0.25, Math.abs(this.v)));
+    if (this.mg() > gamma * NP.ell) this.event = "ผิวน้ำรับน้ำหนักไม่ไหว เพราะ mg มากกว่าแรงดึงผิวมากที่สุด γℓ";
+    else if (pushed) this.event = "ถูกกดจนผิวน้ำขาด " + NP.o.name + "จึงอยู่ใต้ผิวน้ำ";
+    else this.event = "ตกกระทบผิวน้ำแรงจนผิวน้ำขาด";
+  },
+  setPos(y) {
+    const r = NP.r, yb = DEPTH - r;
+    if (y > yb) y = yb;
+    const prev = this.mode;
+    if (y < -r) this.mode = "air";
+    else if (prev === "air" || prev === "surf") {
+      if (y <= ycBreak()) this.mode = "surf";
+      else { this.mode = "water"; this.breakThrough(true); }
+    } else this.mode = y >= yb - 1e-9 ? "bottom" : "water";
+    this.yc = y; this.v = 0;
+  },
+  step(h) {
+    const r = NP.r, m = NP.m, mg = m * G;
+    if (this.mode === "air") {
+      this.v += G * h; this.yc += this.v * h;
+      if (this.yc >= -r) { this.mode = "surf"; addRipple(ripR, XC, this.v * 0.3); }
+    } else if (this.mode === "surf") {
+      const F = Fsurf(zOfYc(this.yc));
+      // แรงหน่วงใช้ให้ผิวน้ำหยุดสั่นเท่านั้น จำกัดขนาดไว้ไม่ให้ช่วยรับแรงกระแทกแทนแรงดึงผิว
+      const k = gamma * NP.ell / lc(), c = 2 * 0.15 * Math.sqrt(k * m);
+      const Fd = clamp(c * this.v, -0.1 * mg, 0.1 * mg);
+      this.v += (mg - F - Fd) / m * h; this.yc += this.v * h;
+      if (this.yc > ycBreak()) { this.mode = "water"; this.breakThrough(false); }
+      else if (this.yc < -r) this.mode = "air";
+    } else if (this.mode === "water") {
+      const net = mg - this.FB(), cw = net / SINK_SPEED;
+      this.v += (net - cw * this.v) / m * h; this.yc += this.v * h;
+      if (this.yc >= DEPTH - r) { this.yc = DEPTH - r; this.v = 0; this.mode = "bottom"; }
+    }
+  }
+};
+
+// ---------- การเคลื่อนด้วยมือ (ปุ่ม) ----------
+function release(P) { P.held = false; P.v = 0; }
+function placeScript(P) { return [{ type: "move", to: -P.bottomOff() - 0.002, speed: 0.03 }, { type: "lower", speed: P.lowerSpeed }]; }
+function pressScript() { return [{ type: "move", to: 0.03, speed: 0.03 }, { type: "wait", t: 0.4 }, { type: "release" }]; }
+function dropScript(P) { return [{ type: "move", to: P.startY(), speed: 0.05 }, { type: "wait", t: 0.3 }, { type: "release" }]; }
+function runScript(P, h) {
+  const st = P.script[0];
+  if (!st) { P.script = null; return; }
+  P.held = true;
+  if (st.type === "move") {
+    const dy = st.to - P.yc, step = st.speed * h;
+    if (Math.abs(dy) <= step) { P.setPos(st.to); P.script.shift(); }
+    else P.setPos(P.yc + Math.sign(dy) * step);
+  } else if (st.type === "wait") {
+    st.t -= h; if (st.t <= 0) P.script.shift();
+  } else if (st.type === "release") {
+    release(P); P.script.shift();
+  } else if (st.type === "lower") {
+    // ลดระดับช้า ๆ จนผิวน้ำหรือน้ำรับน้ำหนักได้เอง แล้วจึงปล่อยมือ
+    P.setPos(P.yc + st.speed * h);
+    if (P.up() >= P.mg() || P.mode === "water" || P.mode === "bottom" || P.yc > 0.03) { release(P); P.script.shift(); }
+  }
+  if (P.script && !P.script.length) P.script = null;
+}
+function handForce(P) {
+  if (!P.held || P.mode === "bottom") return 0;
+  return P.mg() - P.up();        // บวก = มือรับไว้ (ขึ้น) · ลบ = มือกดลง
+}
+function doAll(kind) {
+  metal.event = "";
+  for (const P of [wood, metal]) {
+    P.script = kind === "place" ? placeScript(P) : kind === "press" ? pressScript() : dropScript(P);
+  }
+}
+function resetAll() {
+  for (const P of [wood, metal]) { P.script = null; P.held = true; }
+  metal.mode = "air"; metal.event = "";
+  wood.setPos(wood.startY()); metal.setPos(metal.startY());
+  ripL.length = 0; ripR.length = 0;
+}
+
+// ---------- การวาด ----------
+const cvL = document.getElementById("cvL"), cvR = document.getElementById("cvR"), cvI = document.getElementById("cvI");
+// จอแนวนอน 16:9 และ 4:3: canvas ใช้ขนาดของกรอบที่เหลือในหน้าจอ และขยายตัวอักษรตามความสูงจอ
+const LANDSCAPE = window.matchMedia("(min-width: 1000px) and (min-aspect-ratio: 5/4) and (min-height: 600px)");
+let FS = 1, TS = 0, TOP = 0;   // TS = มาตราส่วนร่วมของภาชนะทั้งสอง (px/m) · TOP = ระยะเว้นขอบบน (px) เมื่ออยู่ในโหมดจอแนวนอน
+function updateLayout() {
+  const on = LANDSCAPE.matches, bL = cvL.parentElement, bR = cvR.parentElement;
+  FS = on ? Math.max(0.95, Math.min(1.45, window.innerHeight / 760)) : 1;
+  TS = 0; TOP = 0;
+  if (on) {
+    // ภาชนะขวามีภาพตัดขวางอยู่ใต้ จึงกำหนดความสูงจากกรอบขวา แล้วให้กรอบซ้ายสูงเท่ากัน
+    TOP = Math.round(24 * FS);
+    TS = Math.min(bL.clientWidth / TANK_W, bR.clientWidth / TANK_W, (bR.clientHeight - TOP) / WORLD_H);
+    if (!(TS > 0)) TS = 0;
+    const hL = Math.round(TS * WORLD_H + TOP) + "px";
+    if (bL.style.flex !== "0 0 " + hL) bL.style.flex = "0 0 " + hL;
+  } else if (bL.style.flex) bL.style.flex = "";
+}
+function setupCanvas(c, aspect) {
+  const dpr = window.devicePixelRatio || 1;
+  let w, h;
+  if (LANDSCAPE.matches) { const b = c.parentElement; w = Math.max(50, b.clientWidth); h = Math.max(50, b.clientHeight); c.style.height = ""; }
+  else { w = c.clientWidth; h = Math.round(w * aspect); }
+  if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) {
+    c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+    if (!LANDSCAPE.matches) c.style.height = h + "px";
+  }
+  const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+function font(px, bold) { return (bold ? "700 " : "") + Math.round(px * FS) + 'px "THSarabunLocal", "Sarabun", sans-serif'; }
+
+// ลูกศรแนวดิ่ง dy (พิกเซล ลบ = ขึ้น) พร้อมป้ายชื่อ main + ตัวห้อย sub
+function arrowV(ctx, x, y, dy, color, main, sub, dashed) {
+  if (Math.abs(dy) < 2) dy = Math.sign(dy || 1) * 2;
+  const hd = Math.min(9, Math.abs(dy) * 0.7), dir = Math.sign(dy);
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 3;
+  if (dashed) ctx.setLineDash([5, 4]);
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + dy - dir * hd); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x, y + dy); ctx.lineTo(x - 6, y + dy - dir * hd); ctx.lineTo(x + 6, y + dy - dir * hd); ctx.closePath(); ctx.fill();
+  label(ctx, x + 8, y + dy + (dir < 0 ? 6 : -2), main, sub, color);
+  ctx.restore();
+}
+function label(ctx, x, y, main, sub, color) {
+  ctx.fillStyle = color; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.font = font(22, true); ctx.fillText(main, x, y);
+  if (sub) { const w = ctx.measureText(main).width; ctx.font = font(15, true); ctx.fillText(sub, x + w + 1, y + 6); }
+}
+
+function drawTank(which) {
+  const isL = which === "L", c = isL ? cvL : cvR;
+  const { ctx, w, h } = setupCanvas(c, WORLD_H / TANK_W);
+  const s = TS || w / TANK_W, ox = (w - TANK_W * s) / 2, oy = TOP, X = x => ox + x * s, Y = y => oy + (y + AIR_H) * s;
+  c._s = s; c._ox = ox; c._oy = oy;
+  ctx.clearRect(0, 0, w, h);
+  const wallL = 0.003, wallR = TANK_W - 0.003;
+  const P = isL ? wood : metal, rip = isL ? ripL : ripR;
+
+  // ผิวน้ำ: คลื่น + รอยยุบใต้วัตถุโลหะ
+  let dim = null;
+  if (!isL && metal.mode === "surf") {
+    const z = zOfYc(metal.yc), prof = profileTable(thetaOfZ(z));
+    const x1 = XC - NP.o.vis / 2, x2 = XC + NP.o.vis / 2;
+    dim = x => (x >= x1 && x <= x2) ? z : profAt(prof, x < x1 ? x1 - x : x - x2);
+  }
+  const pts = [];
+  for (let px = X(wallL); px <= X(wallR) + 0.01; px += 1.5) {
+    const x = (Math.min(px, X(wallR)) - ox) / s;
+    pts.push([Math.min(px, X(wallR)), Y(rippleAt(rip, x) + (dim ? dim(x) : 0))]);
+  }
+  const waterPath = () => {
+    ctx.beginPath(); ctx.moveTo(X(wallL), Y(DEPTH));
+    for (const p of pts) ctx.lineTo(p[0], p[1]);
+    ctx.lineTo(X(wallR), Y(DEPTH)); ctx.closePath();
+  };
+  const water = css("--water");
+  ctx.fillStyle = water; waterPath(); ctx.fill();
+
+  // วัตถุ
+  if (isL) drawWood(ctx, X, Y, s); else drawMetal(ctx, X, Y, s);
+  // น้ำด้านหน้าวัตถุ
+  ctx.fillStyle = water; ctx.globalAlpha = 0.5; waterPath(); ctx.fill(); ctx.globalAlpha = 1;
+  ctx.strokeStyle = css("--water-top"); ctx.lineWidth = 1.6;
+  ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke();
+
+  // ภาชนะ
+  ctx.strokeStyle = css("--glass-edge"); ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(X(wallL), Y(-AIR_H + 0.006)); ctx.lineTo(X(wallL), Y(DEPTH + GLASS / 2));
+  ctx.lineTo(X(wallR), Y(DEPTH + GLASS / 2)); ctx.lineTo(X(wallR), Y(-AIR_H + 0.006)); ctx.stroke();
+  // ระดับผิวน้ำเมื่อไม่มีวัตถุ
+  ctx.save(); ctx.setLineDash([3, 5]); ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(X(wallR) - 26, Y(0)); ctx.lineTo(X(wallR), Y(0)); ctx.stroke(); ctx.restore();
+  // มาตราส่วน 1 cm
+  ctx.strokeStyle = css("--muted"); ctx.fillStyle = css("--muted"); ctx.lineWidth = 2;
+  const sy = Y(-AIR_H + 0.004);
+  ctx.beginPath(); ctx.moveTo(X(0.008), sy); ctx.lineTo(X(0.018), sy); ctx.moveTo(X(0.008), sy - 4); ctx.lineTo(X(0.008), sy + 4);
+  ctx.moveTo(X(0.018), sy - 4); ctx.lineTo(X(0.018), sy + 4); ctx.stroke();
+  ctx.font = font(17); ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText("1 cm", X(0.019) + 3, sy);
+
+  // มือ (แท่งจับ)
+  const halfH = isL ? WOOD_A / 2 : Math.max(NP.r, 1.5 / s);
+  if (P.held) {
+    ctx.strokeStyle = css("--f-h"); ctx.lineCap = "round"; ctx.lineWidth = isL ? 7 : 4;
+    ctx.beginPath(); ctx.moveTo(X(XC), 0); ctx.lineTo(X(XC), Y(P.yc - halfH) - 1); ctx.stroke(); ctx.lineCap = "butt";
+  }
+
+  // แรง
+  if (showF) {
+    const mg = P.mg(), Lref = isL ? 46 : 52, L = F => clamp(F / mg * Lref, 0, 150);
+    const cx = X(XC), cy = Y(P.yc), ups = [], downs = [];
+    if (isL) { if (wood.FB() > 0) ups.push([wood.FB(), css("--f-b"), "F", "B"]); }
+    else {
+      if (metal.mode === "surf") ups.push([metal.Fs(), css("--f-s"), "F", ""]);
+      if (metal.mode === "water" || metal.mode === "bottom") ups.push([metal.FB(), css("--f-b"), "F", "B"]);
+      if (metal.mode === "bottom") ups.push([mg - metal.FB(), css("--f-h"), "N", ""]);
+    }
+    const hf = handForce(P);
+    if (Math.abs(hf) > 0.01 * mg) (hf > 0 ? ups : downs).push([Math.abs(hf), css("--f-h"), "มือ", "", true]);
+    arrowV(ctx, cx, cy, L(mg), css("--f-w"), "mg", "");
+    const offs = [-30, 30, -60, 60];
+    ups.forEach((f, i) => arrowV(ctx, cx + offs[i], cy, -L(f[0]), f[1], f[2], f[3], f[4]));
+    downs.forEach((f, i) => arrowV(ctx, cx + 30 + 30 * i, cy, L(f[0]), f[1], f[2], f[3], f[4]));
+  }
+}
+
+function drawWood(ctx, X, Y, s) {
+  const a = WOOD_A, x0 = X(XC - a / 2), y0 = Y(wood.yc - a / 2), sz = a * s;
+  ctx.fillStyle = css("--wood"); ctx.fillRect(x0, y0, sz, sz);
+  ctx.strokeStyle = css("--wood-d"); ctx.lineWidth = 1.2;
+  for (let i = 1; i < 5; i++) {
+    ctx.beginPath(); ctx.moveTo(x0 + 3, y0 + sz * i / 5);
+    ctx.bezierCurveTo(x0 + sz * 0.3, y0 + sz * i / 5 - 4, x0 + sz * 0.7, y0 + sz * i / 5 + 4, x0 + sz - 3, y0 + sz * i / 5); ctx.stroke();
+  }
+  ctx.lineWidth = 2; ctx.strokeRect(x0, y0, sz, sz);
+}
+
+function drawMetal(ctx, X, Y, s) {
+  const o = NP.o, x1 = X(XC - o.vis / 2), x2 = X(XC + o.vis / 2), cy = Y(metal.yc);
+  const th = Math.max(2 * NP.r * s, o.shape === "plate" ? 2.5 : 3);
+  const grad = ctx.createLinearGradient(0, cy - th / 2, 0, cy + th / 2);
+  grad.addColorStop(0, css("--steel")); grad.addColorStop(1, css("--steel-d"));
+  ctx.fillStyle = grad; ctx.strokeStyle = css("--steel-d"); ctx.lineWidth = 1;
+  if (objKey === "needle") {
+    const tip = Math.min(th * 4, 22);
+    ctx.beginPath(); ctx.moveTo(x1 + th / 2, cy - th / 2); ctx.lineTo(x2 - tip, cy - th / 2); ctx.lineTo(x2, cy);
+    ctx.lineTo(x2 - tip, cy + th / 2); ctx.lineTo(x1 + th / 2, cy + th / 2);
+    ctx.arc(x1 + th / 2, cy, th / 2, Math.PI / 2, -Math.PI / 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = css("--card"); ctx.beginPath(); ctx.ellipse(x1 + th * 2.2, cy, th * 1.1, Math.max(th * 0.22, 0.8), 0, 0, 2 * Math.PI); ctx.fill();
+  } else if (objKey === "clip") {
+    ctx.strokeStyle = grad; ctx.lineCap = "round"; ctx.lineWidth = th;
+    ctx.beginPath(); ctx.moveTo(x1 + th / 2, cy); ctx.lineTo(x2 - th / 2, cy); ctx.stroke(); ctx.lineCap = "butt";
+  } else {
+    ctx.fillRect(x1, cy - th / 2, x2 - x1, th);
+  }
+  if (metal.mode === "air") {
+    ctx.fillStyle = css("--muted"); ctx.font = font(18); ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+    ctx.fillText(o.name, X(XC) + 60, cy - 6);
+  }
+}
+
+// ภาพตัดขวางขยายของวัตถุโลหะกับผิวน้ำ
+function drawInset() {
+  const { ctx, w, h } = setupCanvas(cvI, 0.42);
+  const plate = NP.o.shape === "plate";
+  const xw = plate ? 2 * NP.hw + 0.014 : 0.013, si = Math.min(w / xw, h / (0.42 * xw)), top = -0.35 * xw * 0.42;
+  const oy = (h - 0.42 * xw * si) / 2;
+  const X = x => w / 2 + x * si, Y = y => (y - top) * si + oy, xr = w / (2 * si);
+  ctx.clearRect(0, 0, w, h);
+  const water = css("--water"), mode = metal.mode, yc = metal.yc, mg = metal.mg();
+  let th = 0, z = 0, xc = 0, prof = null;
+  if (mode === "surf") { z = zOfYc(yc); th = thetaOfZ(z); prof = profileTable(th); xc = plate ? NP.hw : NP.r * Math.sin(th); }
+
+  ctx.beginPath(); ctx.moveTo(X(-xr), h);
+  if (mode === "surf") {
+    for (let x = -xr; x <= -xc; x += 1 / si) ctx.lineTo(X(x), Y(profAt(prof, -xc - x)));
+    ctx.lineTo(X(-xc), Y(z));
+    if (plate) ctx.lineTo(X(xc), Y(z));
+    else ctx.arc(X(0), Y(yc), NP.r * si, Math.PI / 2 + th, Math.PI / 2 - th, true);
+    for (let x = xc; x <= xr; x += 1 / si) ctx.lineTo(X(x), Y(profAt(prof, x - xc)));
+    ctx.lineTo(X(xr), Y(0));
+  } else { ctx.lineTo(X(-xr), Y(0)); ctx.lineTo(X(xr), Y(0)); }
+  ctx.lineTo(X(xr), h); ctx.closePath();
+  ctx.fillStyle = water; ctx.fill();
+  // เส้นผิวน้ำ
+  ctx.strokeStyle = css("--water-top"); ctx.lineWidth = 2; ctx.beginPath();
+  if (mode === "surf") {
+    for (let x = -xr; x <= -xc; x += 1 / si) ctx.lineTo(X(x), Y(profAt(prof, -xc - x)));
+    ctx.lineTo(X(-xc), Y(z)); ctx.stroke(); ctx.beginPath(); ctx.moveTo(X(xc), Y(z));
+    for (let x = xc; x <= xr; x += 1 / si) ctx.lineTo(X(x), Y(profAt(prof, x - xc)));
+  } else { ctx.moveTo(X(-xr), Y(0)); ctx.lineTo(X(xr), Y(0)); }
+  ctx.stroke();
+  // ระดับผิวน้ำเดิม
+  ctx.save(); ctx.setLineDash([3, 5]); ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, Y(0)); ctx.lineTo(w, Y(0)); ctx.stroke(); ctx.restore();
+
+  ctx.font = font(17); ctx.fillStyle = css("--muted"); ctx.textAlign = "left"; ctx.textBaseline = "top";
+  ctx.fillText("ภาพตัดขวาง (ขยาย)", 8, 4);
+
+  const cy = Y(yc), visible = cy > -10 && cy < h + 10;
+  if (!visible) {
+    ctx.font = font(20, true); ctx.fillStyle = css("--primary"); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(yc < 0 ? "ยังไม่แตะผิวน้ำ" : "อยู่ใต้ผิวน้ำ ผิวน้ำไม่ได้รองรับแล้ว", w / 2, h * 0.75);
+    return;
+  }
+  // วัตถุ
+  const grad = ctx.createLinearGradient(0, cy - NP.r * si, 0, cy + NP.r * si);
+  grad.addColorStop(0, css("--steel")); grad.addColorStop(1, css("--steel-d"));
+  ctx.fillStyle = grad;
+  if (plate) { const t = Math.max(NP.r * 2 * si, 3); ctx.fillRect(X(-NP.hw), cy - t / 2, 2 * NP.hw * si, t); }
+  else { ctx.beginPath(); ctx.arc(X(0), cy, Math.max(NP.r * si, 2), 0, 2 * Math.PI); ctx.fill(); }
+
+  if (!showF) return;
+  const Lref = 40;
+  arrowV(ctx, X(0), cy, Lref, css("--f-w"), "mg", "");
+  if (mode === "surf") {
+    const half = gamma * NP.ell / 2, Lf = clamp(half / mg * Lref, 0, 110), col = css("--f-s");
+    for (const sg of [-1, 1]) {
+      const px = X(sg * xc), py = Y(z), ex = px + sg * Lf * Math.cos(th), ey = py - Lf * Math.sin(th);
+      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3;
+      const ang = Math.atan2(ey - py, ex - px);
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(ex - 8 * Math.cos(ang), ey - 8 * Math.sin(ang)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ex, ey);
+      ctx.lineTo(ex - 9 * Math.cos(ang) + 5 * Math.sin(ang), ey - 9 * Math.sin(ang) - 5 * Math.cos(ang));
+      ctx.lineTo(ex - 9 * Math.cos(ang) - 5 * Math.sin(ang), ey - 9 * Math.sin(ang) + 5 * Math.cos(ang)); ctx.closePath(); ctx.fill();
+      ctx.save(); ctx.setLineDash([4, 4]); ctx.lineWidth = 1.5; ctx.globalAlpha = 0.8;
+      ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(px, ey); ctx.moveTo(px, py); ctx.lineTo(px, ey); ctx.stroke(); ctx.restore();
+      ctx.font = font(18, true); ctx.textAlign = sg < 0 ? "right" : "left"; ctx.textBaseline = "bottom";
+      ctx.fillText("γℓ/2", ex + sg * 4, ey - 2);
+    }
+    // มุม θ ที่ขอบด้านขวา
+    const px = X(xc), py = Y(z);
+    ctx.save(); ctx.setLineDash([3, 4]); ctx.strokeStyle = css("--muted"); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + 46, py); ctx.stroke(); ctx.restore();
+    if (th > 0.05) {
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(px, py, 24, -th, 0); ctx.stroke();
+      ctx.fillStyle = css("--ink"); ctx.font = font(19, true); ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      ctx.fillText("θ", px + 28 * Math.cos(th / 2) + 2, py - 28 * Math.sin(th / 2));
+    }
+  } else if (mode === "water" || mode === "bottom") {
+    arrowV(ctx, X(0) - 34, cy, -clamp(metal.FB() / mg * Lref, 2, 110), css("--f-b"), "F", "B");
+  }
+}
+
+// ---------- ตัวเลขและข้อความ ----------
+const $ = id => document.getElementById(id);
+function row(color, name, value) {
+  return "<tr><td>" + (color ? '<span class="dot" style="background:' + css(color) + '"></span>' : "") + name + '</td><td class="num">' + value + "</td></tr>";
+}
+function updateText() {
+  // ก้อนไม้
+  const wmg = wood.mg(), wFB = wood.FB(), sub = wood.sub() / WOOD_A, hfW = handForce(wood);
+  let st;
+  if (wood.held) st = sub === 0 ? "ถือไว้เหนือผิวน้ำ" : (hfW < 0 ? "ถูกกดไว้: แรงพยุงมากกว่า mg จึงต้องออกแรงกด" : "มือกำลังหย่อนก้อนไม้ลงน้ำ");
+  else if (sub === 0) st = "กำลังตก";
+  else if (Math.abs(wood.v) < 0.003 && Math.abs(wFB - wmg) < 0.03 * wmg) st = "<b>ลอยนิ่งด้วยแรงพยุง</b>: F<sub>B</sub> = mg";
+  else st = wood.v < 0 ? "กำลังเคลื่อนขึ้น: F<sub>B</sub> มากกว่า mg" : "กำลังเคลื่อนลง";
+  $("stL").innerHTML = st;
+  $("roL").innerHTML =
+    row("--f-w", "น้ำหนัก mg", mN(wmg)) +
+    row("--f-b", "แรงพยุง F<sub>B</sub> = ρVg", mN(wFB)) +
+    row("--f-h", "แรงจากมือ", wood.held && Math.abs(hfW) > 1e-6 ? mN(Math.abs(hfW)) + (hfW > 0 ? " (ขึ้น)" : " (ลง)") : "—") +
+    row("", "ปริมาตรส่วนที่จม", (sub * 100).toFixed(0) + " % ของก้อน");
+
+  // วัตถุโลหะ
+  const nm = NP.o.name, mg = metal.mg(), hf = handForce(metal);
+  const z = metal.mode === "surf" ? zOfYc(metal.yc) : 0, th = thetaOfZ(z);
+  if (metal.mode === "air") st = metal.held ? "ถือไว้เหนือผิวน้ำ" : "กำลังตก";
+  else if (metal.mode === "surf") {
+    if (metal.held) st = hf >= 0 ? "ผิวน้ำยุบลงรับ" + nm + " มือยังรับน้ำหนักบางส่วน" : "มือกำลังกดผิวน้ำให้ยุบลง";
+    else if (Math.abs(metal.v) < 0.002) st = "<b>ลอยนิ่งด้วยแรงดึงผิว</b>: γℓ sinθ = mg";
+    else st = "ผิวน้ำกำลังยุบลงหรือคืนตัว";
+  } else if (metal.mode === "water") st = metal.held ? "ถูกจับไว้ใต้ผิวน้ำ" : "<b>กำลังจม</b>: ใต้น้ำมีแต่แรงพยุง ซึ่งน้อยกว่า mg";
+  else st = "<b>จมอยู่ที่ก้นภาชนะ</b>";
+  $("stR").innerHTML = st + (metal.event ? '<span class="ev">' + metal.event + "</span>" : "");
+  const Ftxt = metal.mode === "surf" ? mN(metal.Fs()) + " (θ = " + (th * 180 / Math.PI).toFixed(0) + "°)" : "0";
+  const FBtxt = metal.mode === "surf" ? "น้อยมาก ไม่นำมาคิด" : mN(metal.FB());
+  let extra = row("--f-h", "แรงจากมือ", metal.held && Math.abs(hf) > 1e-7 ? mN(Math.abs(hf)) + (hf > 0 ? " (ขึ้น)" : " (ลง)") : "—");
+  if (metal.mode === "bottom") extra = row("--f-h", "แรงจากก้นภาชนะ N", mN(mg - metal.FB()));
+  $("roR").innerHTML =
+    row("--f-w", "น้ำหนัก mg", mN(mg)) +
+    row("--f-s", "แรงดึงผิวในแนวดิ่ง γℓ sinθ", Ftxt) +
+    row("--f-b", "แรงพยุง F<sub>B</sub>", FBtxt) + extra;
+
+  if (metal.mode === "surf") {
+    $("capI").innerHTML = "แรงดึงผิวขนานกับผิวน้ำ ตั้งฉากกับขอบที่ผิวน้ำสัมผัส ด้านละ γℓ/2 = " + mN(gamma * NP.ell / 2) +
+      " · ผลรวมแนวดิ่ง γℓ sinθ = " + mN(metal.Fs());
+  } else if (metal.mode === "air") $("capI").innerHTML = "เมื่อแตะผิวน้ำ ผิวน้ำจะยุบลงและทำมุม θ กับแนวระดับ";
+  else $("capI").innerHTML = "ใต้ผิวน้ำไม่มีขอบผิวน้ำมาสัมผัส จึงไม่มีแรงดึงผิวรองรับ เหลือแต่แรงพยุง F<sub>B</sub> = " + mN(metal.FBmax());
+}
+
+function updateCompare() {
+  const wmg = wood.mg(), wFB = wood.FBmax(), mg = metal.mg(), FB = metal.FBmax(), Fmax = gamma * NP.ell, nm = NP.o.name;
+  const gmin = mg / NP.ell, canFloat = Fmax >= mg;
+  const cmpTxt = (a, b) => a > b ? '<span class="ok">มากกว่า mg</span>' : '<span class="ng">น้อยกว่า mg</span>';
+  $("cmpT").innerHTML =
+    "<tr><th></th><th>ก้อนไม้ (ลูกบาศก์ 2 cm)</th><th>" + nm + "</th></tr>" +
+    "<tr><td>ความหนาแน่น เทียบกับน้ำ 1000 kg/m³</td><td>" + RHO_WOOD + ' kg/m³ <span class="ok">น้อยกว่าน้ำ</span></td><td>' + RHO_S + ' kg/m³ <span class="ng">มากกว่าน้ำ</span></td></tr>' +
+    "<tr><td>น้ำหนัก mg</td><td>" + mN(wmg) + "</td><td>" + mN(mg) + "</td></tr>" +
+    "<tr><td>แรงพยุงมากที่สุด (จมทั้งชิ้น) ρVg</td><td>" + mN(wFB) + " " + cmpTxt(wFB, wmg) + "</td><td>" + mN(FB) + " " + cmpTxt(FB, mg) +
+      " (ประมาณ " + (FB / mg * 100).toFixed(0) + " % ของ mg)</td></tr>" +
+    "<tr><td>แรงดึงผิวมากที่สุด γℓ</td><td>ไม่นำมาคิด เพราะแม้ไม่มีแรงนี้ก็ลอยได้</td><td>" + (gamma * 1000).toFixed(1) + "×10⁻³ N/m × " + (NP.ell * 100).toFixed(0) +
+      " cm = " + mN(Fmax) + " " + cmpTxt(Fmax, mg) + "</td></tr>" +
+    "<tr><td>ลอยได้ด้วย</td><td>แรงพยุง (ส่วนที่จมพอดีให้ F<sub>B</sub> = mg)</td><td>" +
+      (canFloat ? "แรงดึงผิว เมื่อวางอย่างแผ่วเบา" : '<span class="ng">ลอยไม่ได้</span> เพราะ γℓ น้อยกว่า mg') + "</td></tr>" +
+    "<tr><td>กดลงใต้น้ำแล้วปล่อย</td><td>ลอยกลับขึ้นมา เพราะ F<sub>B</sub> มากกว่า mg</td><td>จมถึงก้นภาชนะ เพราะใต้น้ำไม่มีผิวน้ำรองรับ เหลือแต่ F<sub>B</sub> ซึ่งน้อยกว่า mg</td></tr>" +
+    "<tr><td>ลดความตึงผิว (หยดน้ำสบู่)</td><td>ยังลอยเหมือนเดิม เพราะแรงพยุงไม่ขึ้นกับความตึงผิว</td><td>จมเมื่อ γ น้อยกว่า mg/ℓ = " + gmin.toFixed(3) + " N/m</td></tr>";
+}
+
+// ---------- การควบคุม ----------
+const liqSel = $("liq"), gIn = $("g"), dIn = $("d"), objSel = $("obj");
+LIQUIDS.forEach(L => { const o = document.createElement("option"); o.value = L.id; o.textContent = L.name; liqSel.appendChild(o); });
+liqSel.value = "w20";
+function setGamma(g, fromSlider) {
+  gamma = g; gIn.value = g; $("gOut").textContent = g.toFixed(4) + " N/m";
+  if (fromSlider) { const m = LIQUIDS.find(L => L.g !== null && Math.abs(L.g - g) < 1e-6); liqSel.value = m ? m.id : "custom"; }
+  updateCompare();
+}
+liqSel.onchange = () => { const L = LIQUIDS.find(x => x.id === liqSel.value); if (L.g !== null) setGamma(L.g, false); };
+gIn.oninput = () => setGamma(parseFloat(gIn.value), true);
+$("bSoap").onclick = () => { liqSel.value = "soap"; setGamma(0.025, false); };
+function setDia(dmm) {
+  dia = dmm / 1000; $("dOut").textContent = dmm.toFixed(1) + " mm";
+  NP = nProps();
+  if (metal.mode === "bottom") metal.yc = DEPTH - NP.r;
+  updateCompare();
+}
+dIn.oninput = () => setDia(parseFloat(dIn.value));
+objSel.onchange = () => {
+  objKey = objSel.value; NP = nProps();
+  $("dRow").style.display = NP.o.shape === "rod" ? "" : "none";
+  $("nameR").textContent = NP.o.name;
+  metal.script = null; metal.held = true; metal.mode = "air"; metal.event = ""; metal.setPos(metal.startY());
+  updateCompare();
+};
+$("sp").onchange = e => { speed = parseFloat(e.target.value); };
+$("showF").onchange = e => { showF = e.target.checked; };
+$("bPlace").onclick = () => doAll("place");
+$("bPress").onclick = () => doAll("press");
+$("bDrop").onclick = () => doAll("drop");
+$("bReset").onclick = resetAll;
+$("bCmp").onclick = () => document.body.classList.add("cmpOpen");
+$("bCmpClose").onclick = () => document.body.classList.remove("cmpOpen");
+document.addEventListener("click", (e) => { if (document.body.classList.contains("cmpOpen") && e.target === document.body) document.body.classList.remove("cmpOpen"); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") document.body.classList.remove("cmpOpen"); });
+
+// ลากวัตถุขึ้นลง
+function hookDrag(c, P, isL) {
+  let drag = false, offset = 0;
+  const toWorld = e => {
+    const r = c.getBoundingClientRect(), s = c._s || r.width / TANK_W, ox = c._ox || 0, oy = c._oy || 0;
+    return { x: (e.clientX - r.left - ox) / s, y: (e.clientY - r.top - oy) / s - AIR_H };
+  };
+  c.addEventListener("pointerdown", e => {
+    const p = toWorld(e);
+    const hx = isL ? WOOD_A / 2 + 0.004 : NP.o.vis / 2 + 0.004, hy = isL ? WOOD_A / 2 + 0.004 : NP.r + 0.007;
+    if (Math.abs(p.x - XC) > hx || Math.abs(p.y - P.yc) > hy) return;
+    drag = true; offset = P.yc - p.y; P.script = null; P.held = true; if (!isL) metal.event = "";
+    c.setPointerCapture(e.pointerId); c.style.cursor = "grabbing"; e.preventDefault();
+  });
+  c.addEventListener("pointermove", e => {
+    if (!drag) return;
+    const half = isL ? WOOD_A / 2 : NP.r;
+    const y = clamp(toWorld(e).y + offset, -AIR_H + half + 0.002, DEPTH);
+    // เคลื่อนทีละน้อย เพื่อให้ตรวจการขาดของผิวน้ำได้ตลอดทาง
+    const n = Math.max(1, Math.ceil(Math.abs(y - P.yc) / 0.0002));
+    const y0 = P.yc; for (let i = 1; i <= n; i++) P.setPos(y0 + (y - y0) * i / n);
+  });
+  const end = () => { if (drag) { drag = false; release(P); c.style.cursor = "grab"; } };
+  c.addEventListener("pointerup", end); c.addEventListener("pointercancel", end);
+}
+hookDrag(cvL, wood, true);
+hookDrag(cvR, metal, false);
+
+// ---------- วงรอบหลัก ----------
+let last = performance.now(), textT = 0;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.05); last = now;
+  const simT = dt * speed, n = Math.max(1, Math.ceil(simT / H_STEP)), h = simT / n;
+  for (let i = 0; i < n; i++) {
+    for (const P of [wood, metal]) {
+      if (P.script) runScript(P, h);
+      else if (!P.held) P.step(h);
+    }
+    ageRipples(ripL, h); ageRipples(ripR, h);
+  }
+  updateLayout(); drawTank("L"); drawTank("R"); drawInset();
+  textT += dt; if (textT > 0.12) { textT = 0; updateText(); }
+  requestAnimationFrame(frame);
+}
+// ตั้งค่าตัวควบคุมให้ตรงกับค่าเริ่มต้นทุกครั้ง (Safari บน iPad คืนค่าฟอร์มเดิมเมื่อโหลดหน้าใหม่)
+liqSel.value = "w20"; objSel.value = "needle"; $("sp").value = "0.5"; $("showF").checked = true; dIn.value = "1.0";
+$("dRow").style.display = ""; $("nameR").textContent = OBJS.needle.name;
+setGamma(0.0728, false); setDia(1.0); resetAll(); updateCompare(); updateText();
+requestAnimationFrame(frame);
+document.getElementById("jsWarn").style.display = "none";
+</script>
+</body>
+</html>

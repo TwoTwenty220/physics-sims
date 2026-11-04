@@ -86,7 +86,7 @@ def render_index(courses, entries):
     e = html.escape
     parts = []
     for c in courses:
-        items = sorted((x for x in entries if x["course"] == c["id"]), key=lambda x: (x["plan_no"], x["title"]))
+        items = sorted((x for x in entries if x["course"] == c["id"]), key=lambda x: x["plan_no"])  # ในแผนเดียวกันเรียงตามลำดับใน sims.json
         if not items:
             continue
         parts.append(f'<section><h2>{e(c["title"])}</h2>')

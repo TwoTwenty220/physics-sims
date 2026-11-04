@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ความยาวผิวสัมผัสกับแรงดึงผิว</title>
+<!--
+  Simulation เกี่ยวกับการนับความยาวของผิวของเหลวที่สัมผัสวัตถุ (l) ขณะดึงวัตถุออกจากผิวของเหลว
+  ฟิสิกส์ 2 (ว31112) แผนที่ 01 หัวข้อ 17.2.1 ใช้ประกอบสไลด์ "การหาความตึงผิว" และ "ตัวอย่างที่ 3"
+  ที่มาในหนังสือ
+    gamma = F/l (สมการ 17.4) ฟิล์มในขดลวดรูปตัวยูกับลวด xy ผิว 2 ด้าน l = 2d รูป 17.9: หนังสือเรียน ฟิสิกส์ เล่ม 5 สสวท. หน้า 208
+    กิจกรรม 17.3 ห่วงวงกลม l เป็นสองเท่าของเส้นรอบวง รูป 17.10 ผิวด้านนอกและด้านใน: หน้า 209–210
+    ตาราง 17.2 และตัวอย่าง 17.3 (วงแหวน d = 4.0 cm, m = 1.0 g, T = 3.3e-2 N, gamma = 0.092 N/m): หน้า 211–212
+  กรณีขยายความที่ไม่มีในหนังสือ สสวท.
+    เหรียญหรือแผ่นกลมทึบ l = pi*d (ขอบนอกเส้นเดียว) ตามโจทย์แบบฝึกหัดทั่วไป ดูแผง "สมมติฐานของโมเดล" ในหน้านี้
+  ค่าที่ไม่มีในหนังสือ (ค่าประมาณ)
+    ความหนาแน่นของเหลว: น้ำ 1000 · กลีเซอรีน 1260 · เบนซิน 876 kg/m^3 · ของเหลวในตัวอย่างที่ 3 ใช้ 1000 kg/m^3
+    ลวดวงแหวนรัศมี 0.6 mm · เหรียญหนา 1.5 mm (ใช้วาดภาพเท่านั้น ไม่เข้าการคำนวณแรง)
+    ไม่ใส่ปรอทจากตาราง 17.2 เพราะโมเดลนี้สมมติว่าของเหลวเปียกวัตถุ
+  แบบจำลอง
+    แรงดึงผิวที่เส้นขอบแต่ละเส้น = gamma * (ความยาวเส้นขอบ) ทิศตามผิวของเหลว ณ เส้นขอบ
+    ผิวทำมุม theta กับแนวระดับ แรงดึงผิวในแนวดิ่ง = gamma*l*sin(theta) มากที่สุดเท่ากับ gamma*l เมื่อผิวตั้งดิ่ง
+    T = mg + gamma*l*sin(theta) (ดึงช้ามาก แรงลัพธ์เป็นศูนย์)
+    รูปร่างผิวโค้งใช้สมการผิวโค้งสองมิติ z = 2*lc*sin(theta/2), lc = sqrt(gamma/(rho*g)) ผิวขาดเมื่อ z = sqrt(2)*lc (นอกหลักสูตร ใช้วาดภาพ)
+    กรอบตัวยู: ลวด xy เบา ไม่มีแรงเสียดทาน T = 2*gamma*d ไม่ขึ้นกับความยาวฟิล์ม
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #4A2033; --secondary: #1E6670; --accent: #E2772E; --alert: #AD3426;
+  --ink: #2B2427; --muted: #7a6d72; --paper: #FCF8F3; --card: #ffffff; --line: #e6dcd3;
+  --water: rgba(30,102,112,0.22); --water-top: #1E6670; --air: rgba(140,170,190,0.10);
+  --l1: #E2772E; --l2: #7B3FA0; --f-t: #1F5FA8; --f-w: #2E7D4F; --f-s: #AD3426;
+  --metal: #9aa3a9; --metal-d: #5d666c; --brass: #c9a24a; --brass-d: #8a6a22; --frame: #b07a2a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #f0c6d6; --secondary: #6cc3cc; --accent: #f29a5c; --alert: #ef7b6c;
+    --ink: #f1e9e4; --muted: #b3a6ab; --paper: #1d1719; --card: #2a2225; --line: #43383c;
+    --water: rgba(108,195,204,0.22); --water-top: #6cc3cc; --air: rgba(160,190,210,0.08);
+    --l1: #f29a5c; --l2: #c79be0; --f-t: #7fb0ef; --f-w: #7ccf98; --f-s: #ef7b6c;
+    --metal: #b8c0c5; --metal-d: #7c868c; --brass: #d8b45e; --brass-d: #9d7c30; --frame: #d39a4a;
+  }
+}
+:root[data-theme="dark"] {
+  --primary: #f0c6d6; --secondary: #6cc3cc; --accent: #f29a5c; --alert: #ef7b6c;
+  --ink: #f1e9e4; --muted: #b3a6ab; --paper: #1d1719; --card: #2a2225; --line: #43383c;
+  --water: rgba(108,195,204,0.22); --water-top: #6cc3cc; --air: rgba(160,190,210,0.08);
+  --l1: #f29a5c; --l2: #c79be0; --f-t: #7fb0ef; --f-w: #7ccf98; --f-s: #ef7b6c;
+  --metal: #b8c0c5; --metal-d: #7c868c; --brass: #d8b45e; --brass-d: #9d7c30; --frame: #d39a4a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: "THSarabunLocal", "Sarabun", sans-serif; font-size: 21px; line-height: 1.35;
+}
+header { padding: 10px 20px 6px; border-bottom: 3px solid var(--accent); display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+header h1 { margin: 0; font-size: 34px; color: var(--primary); }
+header span { color: var(--muted); font-size: 19px; }
+main { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 14px; padding: 14px 16px; align-items: start; }
+#ctrl { grid-row: span 2; }
+.colA, .colB { min-width: 0; }
+.colB { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.cv { position: relative; width: 100%; }
+.cv canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+#sceneWrap { aspect-ratio: 2 / 1; min-height: 300px; }
+body.m-frame #sceneWrap { aspect-ratio: 1.75 / 1; }
+#zoomWrap { aspect-ratio: 2.5 / 1; min-height: 200px; margin-top: 8px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+body.m-compare #zoomWrap { aspect-ratio: 2.9 / 1; }
+body.m-frame #zoomWrap { display: none; }
+#topWrap { aspect-ratio: 1.6 / 1; min-height: 200px; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+.modal[hidden] { display: none; }
+.modal-card { background: var(--card); color: var(--ink); border-radius: 12px; padding: 12px 18px 16px; max-width: 900px; width: 100%; max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; position: sticky; top: -12px; background: var(--card); padding: 6px 0; font-size: 1.15em; color: var(--secondary); }
+.modal-card h3 { margin: 10px 0 2px; font-size: 1em; color: var(--primary); }
+.modal-card ul { margin: 2px 0 4px; padding-left: 22px; }
+.modal-card .ref { font-size: 0.88em; color: var(--muted); word-break: break-word; }
+.modal-card a { color: var(--secondary); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-width: 0; }
+.card h2 { margin: 0 0 6px; font-size: 23px; color: var(--secondary); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.card h2 small { font-size: 18px; color: var(--muted); font-weight: 400; }
+label { display: block; margin-top: 8px; }
+.rowv { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.val { font-weight: 700; color: var(--primary); white-space: nowrap; }
+input[type=range] { width: 100%; accent-color: var(--accent); height: 30px; }
+select { width: 100%; font: inherit; font-size: 20px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+button { font: inherit; font-size: 20px; font-weight: 700; padding: 6px 8px; border-radius: 8px; border: none; cursor: pointer; line-height: 1.15; }
+.b-main { background: var(--accent); color: #fff; }
+.b-plain { background: var(--line); color: var(--ink); }
+.check { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.check input { width: 22px; height: 22px; flex: none; accent-color: var(--accent); }
+.grp { margin-top: 10px; padding-top: 6px; border-top: 1px solid var(--line); }
+.grp > b { color: var(--secondary); }
+.note { font-size: 17px; color: var(--muted); margin: 8px 0 0; }
+canvas { display: block; width: 100%; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#scene { touch-action: none; cursor: grab; }
+.status { margin-top: 6px; padding: 6px 10px; border-radius: 8px; background: var(--paper); border-left: 5px solid var(--secondary); min-height: 2.9em; }
+.status b { color: var(--primary); }
+.sum { margin-top: 6px; padding: 6px 10px; border-radius: 8px; background: var(--paper); text-align: center; font-size: 22px; min-height: 1.9em; }
+.sum .c1 { color: var(--l1); font-weight: 700; } .sum .c2 { color: var(--l2); font-weight: 700; }
+table { width: 100%; border-collapse: collapse; font-size: 19px; }
+th, td { border-bottom: 1px solid var(--line); padding: 3px 6px; text-align: left; vertical-align: top; }
+th { color: var(--secondary); }
+td.num { text-align: right; white-space: nowrap; font-weight: 700; }
+.tblwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.hidden-msg { color: var(--muted); font-size: 19px; padding: 6px 0; }
+button, select, input, label, summary { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#jsWarn { margin: 10px 16px 0; padding: 8px 14px; border-radius: 8px; background: var(--alert); color: #fff; font-size: 20px; }
+#jsErr { font-size: 15px; margin-top: 4px; word-break: break-all; }
+@media (min-width: 1001px) and (max-width: 1279px) {
+  main { grid-template-columns: 250px minmax(0, 1fr); gap: 10px; padding: 10px; }
+  body { font-size: 19px; }
+}
+@media (max-width: 1000px) {
+  main { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  #ctrl { grid-row: auto; }
+  #ctrl { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); column-gap: 18px; }
+  #ctrl > h2 { grid-column: 1 / -1; }
+  body { font-size: 19px; }
+}
+@media (max-width: 680px) {
+  main { padding: 12px 16px; }
+  .colB { grid-template-columns: minmax(0, 1fr); }
+  header h1 { font-size: 28px; }
+}
+/* จอแนวนอน 16:9 และ 4:3 (โปรเจกเตอร์ ทีวี) แสดงทั้งหมดในหน้าจอเดียว ไม่ต้องเลื่อน ตัวอักษรขยายตามความสูงจอ */
+@media (min-width: 1000px) and (min-aspect-ratio: 5/4) and (min-height: 600px) {
+  html, body { height: 100%; }
+  body { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; font-size: clamp(17px, 2.5vh, 30px); }
+  header { padding: 0.25em 0.8em 0.15em; gap: 0.6em; }
+  header h1 { font-size: 1.4em; }
+  header span { font-size: 0.85em; }
+  main { flex: 1 1 auto; min-height: 0; grid-template-columns: 13em minmax(0, 1.5fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+         gap: 0.5em; padding: 0.5em 0.6em; align-items: stretch; }
+  #ctrl { grid-row: auto; overflow-y: auto; padding: 0.4em 0.65em; }
+  .card { padding: 0.4em 0.65em; }
+  .card h2 { font-size: 1.08em; margin-bottom: 0.2em; }
+  .card h2 small { font-size: 0.8em; }
+  label { margin-top: 0.3em; }
+  select, button { font-size: 0.95em; }
+  input[type=range] { height: 1.4em; }
+  .check { margin-top: 0.2em; }
+  .check input { width: 1em; height: 1em; }
+  .note { font-size: 0.8em; margin-top: 0.3em; }
+  .colA { display: flex; flex-direction: column; min-height: 0; }
+  #sceneWrap, #zoomWrap, #topWrap, body.m-frame #sceneWrap, body.m-compare #zoomWrap { aspect-ratio: auto; min-height: 0; }
+  #sceneWrap { flex: 1.35 1 0; }
+  #zoomWrap { flex: 1 1 0; margin-top: 0.35em; }
+  body.m-frame #sceneWrap { flex: 1 1 0; }
+  .status { flex: none; margin-top: 0.35em; padding: 0.25em 0.5em; font-size: 0.9em; min-height: 0; }
+  .colB { display: flex; flex-direction: column; gap: 0.5em; min-height: 0; align-items: stretch; }
+  .topCard { flex: 1 1 0; display: flex; flex-direction: column; min-height: 0; }
+  #topWrap { flex: 1 1 0; }
+  .sum { flex: none; font-size: 1em; padding: 0.2em 0.5em; min-height: 0; }
+  .numCard { flex: none; max-height: 58%; overflow-y: auto; }
+  table { font-size: 0.85em; }
+  th, td { padding: 0.1em 0.3em; }
+  .numCard .note { font-size: 0.75em; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>ความยาวผิวสัมผัสกับแรงดึงผิว</h1>
+  <span>ฟิสิกส์ 2 (ว31112) · ความตึงผิวของของเหลว · นับเส้นขอบที่ผิวของเหลวสัมผัสวัตถุ</span>
+</header>
+<!-- ข้อความนี้ถูกซ่อนเมื่อโปรแกรมเริ่มทำงานสำเร็จ ถ้ายังเห็นอยู่ แสดงว่าโปรแกรมไม่ทำงาน -->
+<div id="jsWarn">
+  <b>Simulation ยังไม่ทำงาน</b> <span id="jsMsg">เบราว์เซอร์นี้ไม่รันโปรแกรม ให้เปิดลิงก์ด้วย Safari หรือ Chrome หรือดูจากจอที่ครูฉาย</span>
+  <div id="jsErr"></div>
+</div>
+<script>
+window.onerror = function (msg, src, line, col) {
+  var w = document.getElementById("jsWarn"), e = document.getElementById("jsErr");
+  if (!w || !e) return;
+  w.style.display = "block";
+  w.firstElementChild.textContent = "Simulation ทำงานผิดพลาด";
+  document.getElementById("jsMsg").textContent = "กรุณาถ่ายภาพหน้าจอนี้ส่งครู";
+  e.textContent = "ข้อผิดพลาด: " + msg + " (บรรทัด " + line + ":" + col + ") · " + navigator.userAgent;
+};
+</script>
+<main>
+  <section class="card" id="ctrl">
+    <h2>ตั้งค่า</h2>
+    <div>
+      <div class="btns">
+        <button class="b-main" id="bAuto">ดึงช้า ๆ</button>
+        <button class="b-plain" id="bReset">เริ่มใหม่</button>
+      </div>
+      <label>วัตถุ
+        <select id="obj">
+          <option value="ring">วงแหวนบาง (ตัวอย่างที่ 3)</option>
+          <option value="coin">เหรียญหรือแผ่นกลมทึบ</option>
+          <option value="compare">เทียบวงแหวนกับเหรียญ</option>
+          <option value="frame">ลวด xy บนขดลวดรูปตัวยู</option>
+        </select>
+      </label>
+      <label>ของเหลว
+        <select id="liq"></select>
+      </label>
+    </div>
+    <div>
+      <label><span class="rowv"><span id="pullName">ระยะที่ดึงขึ้น</span><span class="val" id="pullV"></span></span>
+        <input type="range" id="pull">
+      </label>
+      <label><span class="rowv"><span id="dName">เส้นผ่านศูนย์กลาง d</span><span class="val" id="dV"></span></span>
+        <input type="range" id="dia" min="1" max="6" step="0.1">
+      </label>
+      <label id="mWrap"><span class="rowv"><span>มวลของวัตถุ m</span><span class="val" id="mV"></span></span>
+        <input type="range" id="mass" min="0" max="5" step="0.1">
+      </label>
+    </div>
+    <div class="grp">
+      <b>แสดงเฉลย</b>
+      <label class="check"><input type="checkbox" id="sCount"> นับเส้นขอบที่ผิวสัมผัส</label>
+      <label class="check"><input type="checkbox" id="sArrow"> ลูกศรแรง</label>
+      <label class="check"><input type="checkbox" id="sNum"> ตัวเลข</label>
+      <p class="note">ปิดไว้ก่อนเพื่อให้นักเรียนทายว่าผิวของเหลวสัมผัสวัตถุกี่เส้น แล้วจึงเปิดเฉลย ลากวัตถุขึ้นลงบนภาพตัดได้</p>
+      <button class="b-plain" id="bAssume" style="width:100%;margin-top:8px">สมมติฐานของโมเดล</button>
+    </div>
+  </section>
+
+  <section class="card colA" id="colA">
+    <h2><span id="sceneTitle">ภาพตัดผ่านกลางวัตถุ</span><small id="sceneSub"></small></h2>
+    <div class="cv" id="sceneWrap"><canvas id="scene" aria-label="ภาพตัดของวัตถุที่ถูกดึงออกจากผิวของเหลว"></canvas></div>
+    <div class="cv" id="zoomWrap"><canvas id="zoom" aria-label="ภาพตัดขยายบริเวณขอบของวัตถุ"></canvas></div>
+    <div class="status" id="status"></div>
+  </section>
+  <div class="colB" id="colB">
+    <section class="card topCard">
+      <h2><span id="topTitle">มองจากด้านบน</span><small id="topSub">เส้นขอบที่ผิวสัมผัสวัตถุ</small></h2>
+      <div class="cv" id="topWrap"><canvas id="top" aria-label="ภาพแสดงเส้นขอบที่ผิวของเหลวสัมผัสวัตถุ"></canvas></div>
+      <div class="sum" id="sum"></div>
+    </section>
+    <section class="card numCard">
+      <h2>ค่าที่คำนวณได้</h2>
+      <div id="numBox"></div>
+    </section>
+  </div>
+</main>
+<div id="assumeBox" class="modal" hidden>
+  <div class="modal-card" role="dialog" aria-label="สมมติฐานของโมเดลและแหล่งอ้างอิง">
+    <div class="modal-head"><b>สมมติฐานของโมเดลและแหล่งอ้างอิง</b><button class="b-plain" id="bClose">ปิด</button></div>
+
+        <h3>ลวด xy บนขดลวดรูปตัวยู</h3>
+        <ul>
+          <li>ลวด xy เบาและเคลื่อนที่ได้คล่อง ไม่มีแรงเสียดทาน</li>
+          <li>ฟิล์มบางมากแต่มีผิว 2 ด้าน ผิวหน้าและผิวหลังสัมผัสลวดยาว d เท่ากัน จึงได้ ℓ = 2d</li>
+          <li>ดึงช้ามากจนลวดอยู่ในสมดุลตลอด แรงดึง T เท่ากับแรงดึงผิว F</li>
+          <li>แรงดึงผิวขึ้นกับความยาวเส้นขอบ d ไม่ขึ้นกับความยาวของฟิล์มที่ถูกดึงออก (ใน Simulation ฟิล์มไม่ขาด)</li>
+        </ul>
+        <h3>วงแหวนบาง</h3>
+        <ul>
+          <li>วงแหวนบางมาก ขอบนอกและขอบในยาวประมาณ πd เท่ากัน จึงได้ ℓ = 2πd (ℓ เป็นสองเท่าของเส้นรอบวง)</li>
+          <li>ดึงช้ามาก แรงลัพธ์เป็นศูนย์ T = mg + F</li>
+          <li>ขณะวงแหวนจะหลุด ผิวของเหลวที่เส้นขอบตั้งดิ่ง แรงดึงผิวทั้งหมดจึงอยู่ในแนวดิ่ง</li>
+          <li>ไม่คิดแรงพยุงและน้ำหนักของของเหลวที่ติดขึ้นมากับวงแหวน</li>
+        </ul>
+        <h3>เหรียญหรือแผ่นกลมทึบ (กรณีขยายความ ไม่มีในหนังสือเรียน สสวท.)</h3>
+        <ul>
+          <li>แผ่นบาง แบน วางขนานกับผิวของเหลว ดึงขึ้นตรง ๆ อย่างช้ามาก</li>
+          <li>ของเหลวเปียกผิวล่างของแผ่น ใต้แผ่นเป็นของเหลวทั้งหมด จึงมีผิวสัมผัสเฉพาะที่ขอบนอก ℓ = πd</li>
+          <li>ขณะแผ่นจะหลุด ผิวของเหลวที่ขอบตั้งดิ่ง</li>
+          <li>ไม่คิดผลของความดันของของเหลวใต้แผ่น น้ำหนักของของเหลวที่ถูกยกขึ้น และของเหลวที่ติดแผ่นขึ้นมา</li>
+          <li>ผู้วิจารณ์โจทย์ลักษณะนี้ชี้ว่าการหลุดของแผ่นจริงซับซ้อนกว่านี้ เช่น ของเหลวค้างติดใต้แผ่นเป็นหยด และความดันที่ผิวโค้งทำให้แรงช่วงแรกมากกว่าที่สูตรทำนาย สูตร F = γπd จึงใช้เป็นแนวคิดเบื้องต้นเท่านั้น</li>
+        </ul>
+        <h3>ทุกกรณีใน Simulation</h3>
+        <ul>
+          <li>ของเหลวเปียกวัตถุ จึงไม่ใส่ปรอทจากตาราง 17.2</li>
+          <li>รูปร่างผิวโค้งและความสูงที่ผิวขาดคำนวณจากสมการผิวโค้งสองมิติ (นอกหลักสูตร) ใช้เพื่อวาดภาพ ความหนาแน่นของของเหลวเป็นค่าประมาณ</li>
+        </ul>
+        <h3>แหล่งอ้างอิง</h3>
+        <p class="ref">
+          หนังสือเรียน ฟิสิกส์ เล่ม 5 สสวท. หน้า 208 (สมการ 17.4 รูป 17.9) หน้า 209–210 (กิจกรรม 17.3 รูป 17.10) หน้า 211–212 (ตาราง 17.2 ตัวอย่าง 17.3)<br>
+          ตัวอย่างโจทย์แผ่นกลมที่ใช้ F = γ × เส้นรอบวง:
+          <a href="https://www.vedantu.com/question-answer/calculate-the-force-required-to-take-away-a-flat-class-11-physics-cbse-5f96d48604e4dd48161d2146" target="_blank" rel="noopener">Vedantu</a> ·
+          <a href="https://www.careers360.com/question-the-additional-force-required-to-lift-a-flat-circular-disc-of-radius-5cm-from-the-surface-of-water-with-surface-tension-8tdyne-cm_1-will-be" target="_blank" rel="noopener">Careers360</a> ·
+          <a href="https://questions.collegedunia.com/exams/questions/a-thin-flat-circular-disc-of-radius-4-5-cm-is-plac-6638a241bcb994a4d2152603" target="_blank" rel="noopener">Collegedunia</a><br>
+          ข้อวิจารณ์สมมติฐานของโจทย์:
+          <a href="https://www.physicsforums.com/threads/surface-tension-and-force-required-to-pull-a-thin-ring.898316/" target="_blank" rel="noopener">Physics Forums: Surface tension and force required to pull a thin ring</a><br>
+          งานวัดแรงที่ทำให้แผ่นกลมหลุดจากผิวของเหลว:
+          <a href="https://repository.sspu.edu.ua/items/0ee670d4-33ff-49e4-9fbe-359282569084" target="_blank" rel="noopener">Вимірювання сили відриву диска від рідини в умовах дистанційного навчання (SSPU repository)</a>
+        </p>
+        </div>
+</div>
+
+<script>
+"use strict";
+document.getElementById("jsWarn").style.display = "none";
+
+const G = 9.8;
+const LIQ = [
+  { name: "ของเหลวในตัวอย่างที่ 3", g: 0.092, rho: 1000 },
+  { name: "น้ำ 0 °C", g: 0.0756, rho: 1000 },
+  { name: "น้ำ 20 °C", g: 0.0728, rho: 1000 },
+  { name: "น้ำ 100 °C", g: 0.0589, rho: 1000 },
+  { name: "กลีเซอรีน 20 °C", g: 0.0631, rho: 1260 },
+  { name: "เบนซิน 20 °C", g: 0.0289, rho: 876 }
+];
+const RING_A = 0.0006, COIN_B = 0.00075;
+const PULL_MAX = 0.006;               // m (วงแหวน/เหรียญ)
+const L_MIN = 0.01, L_MAX = 0.06;     // m (ความยาวฟิล์มในกรอบตัวยู)
+const REVEAL_STEP = 750;              // ms ต่อเส้น
+
+const $ = (id) => document.getElementById(id);
+const el = {
+  obj: $("obj"), liq: $("liq"), pull: $("pull"), dia: $("dia"), mass: $("mass"),
+  sCount: $("sCount"), sArrow: $("sArrow"), sNum: $("sNum"),
+  pullV: $("pullV"), dV: $("dV"), mV: $("mV"), pullName: $("pullName"), dName: $("dName"), mWrap: $("mWrap"),
+  scene: $("scene"), zoom: $("zoom"), top: $("top"), status: $("status"), sum: $("sum"), numBox: $("numBox"),
+  sceneTitle: $("sceneTitle"), sceneSub: $("sceneSub"), topTitle: $("topTitle"), topSub: $("topSub"),
+  bAuto: $("bAuto"), bReset: $("bReset")
+};
+LIQ.forEach((q, i) => {
+  const o = document.createElement("option");
+  o.value = i; o.textContent = q.name + " · " + q.g.toFixed(q.g < 0.09 ? 4 : 3) + " N/m";
+  el.liq.appendChild(o);
+});
+
+const S = {
+  mode: "ring", liq: 0, d: 0.04, m: 0.001, pull: 0, L: 0.02,
+  auto: false, showNum: false, showCount: false, showArrow: false, revealT0: 0,
+  o: { ring: null, coin: null }
+};
+function freshObj() { return { broken: false, hb: 0, relax: 0, Tmax: 0 }; }
+S.o.ring = freshObj(); S.o.coin = freshObj();
+
+// ---------- ฟิสิกส์ ----------
+const gam = () => LIQ[S.liq].g;
+const lc = () => Math.sqrt(gam() / (LIQ[S.liq].rho * G));
+const hmax = () => Math.SQRT2 * lc();
+function lines(type) {
+  const pd = Math.PI * S.d;
+  if (type === "ring") return [{ name: "ขอบนอก", sym: "πd", len: pd }, { name: "ขอบใน", sym: "πd", len: pd }];
+  if (type === "coin") return [{ name: "ขอบนอก", sym: "πd", len: pd }];
+  return [{ name: "ผิวหน้า", sym: "d", len: S.d }, { name: "ผิวหลัง", sym: "d", len: S.d }];
+}
+const ellOf = (type) => lines(type).reduce((a, b) => a + b.len, 0);
+function stateOf(type) {
+  const o = S.o[type], ell = ellOf(type), mg = S.m * G;
+  let h = o.broken ? 0 : S.pull;
+  const th = (o.broken || h <= 0) ? 0 : 2 * Math.asin(Math.min(1, h / (2 * lc())));
+  const Fs = o.broken ? 0 : gam() * ell * Math.sin(th);
+  return { ell, mg, h, th, Fs, T: mg + Fs, Fmax: gam() * ell, Tmax: o.Tmax, broken: o.broken };
+}
+function updatePhys() {
+  for (const type of ["ring", "coin"]) {
+    const o = S.o[type], ell = ellOf(type), mg = S.m * G;
+    if (!o.broken && S.pull > hmax() + 1e-12) {
+      o.broken = true; o.hb = hmax(); o.relax = 1;
+      o.Tmax = Math.max(o.Tmax, mg + gam() * ell);
+    } else if (o.broken && S.pull <= 0.00005) {
+      o.broken = false; o.Tmax = mg;
+    }
+    if (!o.broken) o.Tmax = Math.max(o.Tmax, stateOf(type).T);
+  }
+}
+function resetMax() {
+  for (const type of ["ring", "coin"]) { const o = S.o[type]; o.Tmax = o.broken ? S.m * G : stateOf(type).T; }
+}
+
+// ---------- รูปแบบตัวเลข ----------
+const SUP = { "-": "⁻", "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" };
+function sci(x, unit) {
+  if (unit === undefined) unit = "";
+  if (Math.abs(x) < 1e-12) return ("0 " + unit).trim();
+  let e = Math.floor(Math.log10(Math.abs(x)));
+  let m = x / Math.pow(10, e);
+  if (Math.abs(m) >= 9.995) { m /= 10; e += 1; }
+  if (e >= -1 && e <= 1) return (x.toPrecision(3) + " " + unit).trim();
+  return (m.toFixed(2) + " × 10" + String(e).split("").map((c) => SUP[c]).join("") + " " + unit).trim();
+}
+function niceCeil(x) {
+  const e = Math.floor(Math.log10(x)), b = x / Math.pow(10, e);
+  const n = [1, 2, 2.5, 5, 10].find((v) => v >= b - 1e-9);
+  return n * Math.pow(10, e);
+}
+
+// ---------- สี ----------
+let C = {};
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  ["primary", "secondary", "accent", "alert", "ink", "muted", "paper", "card", "line", "water", "water-top", "air",
+   "l1", "l2", "f-t", "f-w", "f-s", "metal", "metal-d", "brass", "brass-d", "frame"].forEach((k) => { C[k] = cs.getPropertyValue("--" + k).trim(); });
+}
+const FONT = '"THSarabunLocal", "Sarabun", sans-serif';
+
+// ---------- canvas ----------
+const DPR = () => Math.min(window.devicePixelRatio || 1, 2.5);
+// ขนาดตัวอักษรบน canvas: จอแนวนอนขยายตามความสูงจอ ให้อ่านได้จากหลังห้องเมื่อฉายด้วยโปรเจกเตอร์หรือทีวี
+const LANDSCAPE = window.matchMedia("(min-width: 1000px) and (min-aspect-ratio: 5/4) and (min-height: 600px)");
+let FS = 1;
+function updateFS() { FS = LANDSCAPE.matches ? Math.max(0.95, Math.min(1.45, window.innerHeight / 760)) : 1; }
+function fit(cv) {
+  const box = cv.parentElement;
+  const w = Math.max(100, box.clientWidth || 300), h = Math.max(80, box.clientHeight || 200);
+  const r = DPR();
+  if (cv.width !== Math.round(w * r) || cv.height !== Math.round(h * r)) {
+    cv.width = Math.round(w * r); cv.height = Math.round(h * r);
+  }
+  const ctx = cv.getContext("2d"); ctx.setTransform(r, 0, 0, r, 0, 0);
+  return { ctx, W: w, H: h };
+}
+function arrow(ctx, x1, y1, x2, y2, col, lw) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const ux = (x2 - x1) / L, uy = (y2 - y1) / L, hl = Math.min(11, L * 0.45);
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw || 2.5;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - ux * hl * 0.8, y2 - uy * hl * 0.8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - ux * hl - uy * hl * 0.45, y2 - uy * hl + ux * hl * 0.45);
+  ctx.lineTo(x2 - ux * hl + uy * hl * 0.45, y2 - uy * hl - ux * hl * 0.45);
+  ctx.closePath(); ctx.fill();
+}
+function text(ctx, s, x, y, col, size, align, bold, base) {
+  ctx.fillStyle = col; ctx.font = (bold ? "700 " : "") + Math.round((size || 19) * FS) + "px " + FONT;
+  ctx.textAlign = align || "left"; ctx.textBaseline = base || "middle"; ctx.fillText(s, x, y);
+}
+// ข้อความที่ไม่ล้นขอบช่องภาพ (VIEW = ขอบซ้าย/ขวาของช่องที่กำลังวาด)
+let VIEW = { l: 0, r: 1e9 };
+function textIn(ctx, s, x, y, col, size, align, bold) {
+  ctx.font = (bold ? "700 " : "") + Math.round((size || 19) * FS) + "px " + FONT;
+  const w = ctx.measureText(s).width;
+  let x0 = align === "right" ? x - w : align === "center" ? x - w / 2 : x;
+  x0 = Math.max(VIEW.l + 4, Math.min(VIEW.r - 4 - w, x0));
+  text(ctx, s, x0, y, col, size, "left", bold);
+}
+function badge(ctx, n, x, y, col) {
+  ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, 10 * FS, 0, 2 * Math.PI); ctx.fill();
+  text(ctx, String(n), x, y + 1, "#fff", 17, "center", true);
+}
+function revealed(i) { return S.showCount && performance.now() - S.revealT0 >= i * REVEAL_STEP; }
+function pulse(i) {
+  if (!S.showCount) return 0;
+  const t = performance.now() - S.revealT0 - i * REVEAL_STEP;
+  return t >= 0 && t < 600 ? Math.sin(Math.PI * t / 600) : 0;
+}
+
+// ผิวโค้งสองมิติ: จุดจากเส้นขอบ (s = 0, z = h) ออกไปจนผิวเกือบราบ
+function meniscus(h, L) {
+  if (h <= 1e-7) return [[0, 0]];
+  const th = 2 * Math.asin(Math.min(1, h / (2 * L)));
+  const X = (p) => L * (2 * Math.cos(p / 2) + Math.log(Math.tan(p / 4)));
+  const x0 = X(th), zmin = 1.5e-5;
+  const pmin = 2 * Math.asin(Math.min(1, zmin / (2 * L)));
+  const pts = [];
+  if (pmin >= th) return [[0, h], [L * 0.2, 0]];
+  const N = 48;
+  for (let i = 0; i <= N; i++) {
+    const p = th * Math.pow(pmin / th, i / N);
+    pts.push([x0 - X(p), 2 * L * Math.sin(p / 2)]);
+  }
+  pts.push([pts[pts.length - 1][0] + L * 0.3, 0]);
+  return pts;
+}
+function clipS(pts, smax) {
+  const out = [];
+  for (let i = 0; i < pts.length; i++) {
+    if (pts[i][0] <= smax) { out.push(pts[i]); continue; }
+    if (i > 0) {
+      const a = pts[i - 1], b = pts[i], t = (smax - a[0]) / (b[0] - a[0]);
+      out.push([smax, a[1] + t * (b[1] - a[1])]);
+    }
+    break;
+  }
+  return out;
+}
+
+// ---------- ภาพตัด: วงแหวน / เหรียญ ----------
+function drawDiscScene(ctx, type, cx, Ys, K, Hc, left, right, rangeN, zoom) {
+  const st = stateOf(type), o = S.o[type], R = S.d / 2;
+  const a = Math.max(RING_A, 3 / K), b = Math.max(COIN_B, 4 / K);
+  // ความสูงผิวของเหลวที่เส้นขอบ (ขณะติด หรือขณะยุบหลังขาด)
+  const hs = o.broken ? o.hb * o.relax : st.h;
+  const yObj = Ys - S.pull * K;      // ระดับเส้นขอบของวัตถุ (ตามมือ)
+  const Lc = lc();
+  const men = meniscus(hs, Lc);
+  const xo = type === "ring" ? R + a : R;           // เส้นขอบด้านนอก
+  const xi = R - a;                                 // เส้นขอบด้านใน (วงแหวน)
+  const P = (x, z) => [cx + x * K, Ys - z * K];
+
+  // ผิวของเหลว
+  const segOuterL = men.slice().reverse().map(([s, z]) => P(-(xo + s), z));
+  const segOuterR = men.map(([s, z]) => P(xo + s, z));
+  let segInnerL = [], segInnerR = [];
+  if (type === "ring") {
+    const mi = clipS(men, xi);
+    segInnerL = mi.map(([s, z]) => P(-(xi - s), z));
+    segInnerR = mi.slice().reverse().map(([s, z]) => P(xi - s, z));
+  }
+  const poly = [[left, Ys]].concat(segOuterL);
+  if (type === "ring") poly.push(...segInnerL, ...segInnerR);
+  poly.push(...segOuterR, [right, Ys], [right, Ys + Hc], [left, Ys + Hc]);
+
+  // อากาศในวงแหวน
+  ctx.fillStyle = C.water; ctx.beginPath(); ctx.moveTo(poly[0][0], poly[0][1]);
+  for (const p of poly) ctx.lineTo(p[0], p[1]);
+  ctx.closePath(); ctx.fill();
+
+  const lineW = (i) => 2.5 + 3 * pulse(i);
+  const strokeSeg = (seg, col, lw) => {
+    if (seg.length < 2) return;
+    ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(seg[0][0], seg[0][1]);
+    for (const p of seg) ctx.lineTo(p[0], p[1]); ctx.stroke();
+  };
+  // ผิวราบ
+  ctx.strokeStyle = C["water-top"]; ctx.lineWidth = 1.5; ctx.beginPath();
+  ctx.moveTo(poly[0][0], poly[0][1]);
+  for (const p of poly.slice(1, poly.length - 2)) ctx.lineTo(p[0], p[1]);
+  ctx.stroke();
+  const attached = !o.broken;
+  const c1 = attached && revealed(1) ? C.l1 : C["water-top"];
+  const c2 = attached && revealed(2) ? C.l2 : C["water-top"];
+  strokeSeg(segOuterL, c1, attached && revealed(1) ? lineW(1) : 1.5);
+  strokeSeg(segOuterR, c1, attached && revealed(1) ? lineW(1) : 1.5);
+  if (type === "ring") {
+    strokeSeg(segInnerL, c2, attached && revealed(2) ? lineW(2) : 1.5);
+    strokeSeg(segInnerR, c2, attached && revealed(2) ? lineW(2) : 1.5);
+  }
+
+  // วัตถุ
+  if (type === "ring") {
+    for (const sx of [-1, 1]) {
+      const x = cx + sx * R * K;
+      ctx.fillStyle = C.metal; ctx.strokeStyle = C["metal-d"]; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(x, yObj, a * K, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    }
+  } else {
+    ctx.fillStyle = C.brass; ctx.strokeStyle = C["brass-d"]; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.rect(cx - R * K, yObj - 2 * b * K, 2 * R * K, 2 * b * K); ctx.fill(); ctx.stroke();
+  }
+  // ภาพขยาย: ป้ายและลูกศรที่เส้นขอบ
+  if (zoom) { drawZoomMarks(ctx, type, cx, Ys, K, yObj, xo, xi, hs, st, attached, a, b); return; }
+  // เชือก 3 เส้นและเครื่องชั่งสปริง
+  const topY = type === "ring" ? yObj - a * K : yObj - 2 * b * K;
+  const apexY = topY - Hc * 0.17;
+  ctx.strokeStyle = C.muted; ctx.lineWidth = 1.3; ctx.beginPath();
+  ctx.moveTo(cx - R * K, topY); ctx.lineTo(cx, apexY); ctx.lineTo(cx + R * K, topY);
+  ctx.moveTo(cx, apexY); ctx.lineTo(cx, topY); ctx.stroke();
+  drawSpring(ctx, cx, apexY, Hc * 0.27, st.T, rangeN, -1);
+
+  // ป้ายนับเส้นขอบ
+  if (attached) {
+    if (revealed(1)) { badge(ctx, 1, cx - xo * K - 13, yObj - 16, C.l1); badge(ctx, 1, cx + xo * K + 13, yObj - 16, C.l1); }
+    if (type === "ring" && revealed(2)) { badge(ctx, 2, cx - xi * K + 13, yObj - 16, C.l2); badge(ctx, 2, cx + xi * K - 13, yObj - 16, C.l2); }
+  }
+  // ลูกศรแรง
+  if (S.showArrow) {
+    const pxN = (Hc * 0.24) / rangeN;
+    const th = attached ? st.th : 0, L0 = 34;
+    const pts = [[-xo, -1], [xo, 1]];
+    if (type === "ring") pts.push([-xi, 1], [xi, -1]);
+    if (attached) for (const [x, dir] of pts) {
+      const X0 = cx + x * K, Y0 = yObj;
+      const ux = dir * Math.cos(th), uy = Math.sin(th);
+      arrow(ctx, X0, Y0, X0 + ux * L0, Y0 + uy * L0, C["f-s"], 2.2);
+    }
+    // แรงลัพธ์บนวัตถุ
+    const midY = yObj;
+    arrow(ctx, cx - 16, midY, cx - 16, midY + st.mg * pxN, C["f-w"], 3);
+    text(ctx, "mg", cx - 22, midY + st.mg * pxN, C["f-w"], 18, "right", true);
+    if (attached && st.Fs > 0) {
+      arrow(ctx, cx + 16, midY, cx + 16, midY + st.Fs * pxN, C["f-s"], 3);
+      text(ctx, "F", cx + 22, midY + st.Fs * pxN, C["f-s"], 19, "left", true);
+    }
+    arrow(ctx, cx, apexY, cx, apexY - st.T * pxN, C["f-t"], 3);
+    text(ctx, "T", cx + 8, apexY - st.T * pxN + 4, C["f-t"], 19, "left", true);
+  }
+  return { yObj, topY };
+}
+
+function drawZoomMarks(ctx, type, cx, Ys, K, yObj, xo, xi, hs, st, attached, a, b) {
+  if (!attached) { textIn(ctx, "ผิวของเหลวหลุดจากวัตถุแล้ว", cx - xo * K, Ys + 24 * FS, C.alert, 18, "center", true); return; }
+  const th = st.th, L0 = 62;
+  const X1 = cx - xo * K, X2 = cx - xi * K;
+  const narrow = VIEW.r - VIEW.l < 360 * FS;
+  const yB = yObj - 30 * FS, yT = yB - 22 * FS, yAir = Ys - 34 * FS;
+  if (S.showArrow) {
+    arrow(ctx, X1, yObj, X1 - Math.cos(th) * L0, yObj + Math.sin(th) * L0, C["f-s"], 3);
+    if (type === "ring") arrow(ctx, X2, yObj, X2 + Math.cos(th) * L0, yObj + Math.sin(th) * L0, C["f-s"], 3);
+  }
+  if (revealed(1)) { badge(ctx, 1, X1 - 34 * FS, yB, C.l1); textIn(ctx, "ขอบนอก", X1 - 34 * FS, yT, C.l1, 19, "center", true); }
+  if (type === "ring") {
+    if (revealed(2)) { badge(ctx, 2, X2 + 34 * FS, yB, C.l2); textIn(ctx, "ขอบใน", X2 + 34 * FS, yT, C.l2, 19, "center", true); }
+    if (revealed(3)) {
+      textIn(ctx, narrow ? "อากาศ" : "อากาศ (ในวงแหวน)", VIEW.r, yAir, C.muted, 18, "right");
+      textIn(ctx, narrow ? "อากาศ" : "อากาศ (นอกวงแหวน)", VIEW.l, yAir, C.muted, 18, "left");
+    }
+  } else if (revealed(2)) {
+    textIn(ctx, "อากาศ", VIEW.l, yAir, C.muted, 18, "left");
+    const yl = Math.min(Ys + 22 * FS, (Ys + yObj) / 2 + 12 * FS);
+    textIn(ctx, "ใต้เหรียญเป็นของเหลว", X1 + 14 * FS, yl, C.secondary, 18, "left", true);
+    textIn(ctx, "ไม่มีผิวด้านใน", X1 + 14 * FS, yl + 20 * FS, C.secondary, 18, "left", true);
+  }
+}
+function drawZoom() {
+  const cv = el.zoom;
+  if (S.mode === "frame") return;
+  const { ctx, W, H } = fit(cv);
+  ctx.clearRect(0, 0, W, H);
+  const types = S.mode === "compare" ? ["ring", "coin"] : [S.mode];
+  const n = types.length, wv = W / n, Ys = H * 0.8;
+  const K = Math.min(wv / 0.02, (H * 0.72) / 0.0068);
+  types.forEach((t, i) => {
+    const vl = wv * i, vc = vl + wv / 2;
+    VIEW = { l: vl, r: vl + wv };
+    ctx.save(); ctx.beginPath(); ctx.rect(vl, 0, wv, H); ctx.clip();
+    ctx.fillStyle = C.air; ctx.fillRect(vl, 0, wv, Ys);
+    drawDiscScene(ctx, t, vc + (S.d / 2) * K, Ys, K, H, vl, vl + wv, 1, true);
+    ctx.restore();
+    text(ctx, (n > 1 ? (t === "ring" ? "วงแหวน " : "เหรียญ ") : "") + (n > 1 ? "(ขยายขอบซ้าย)" : "ขยายขอบด้านซ้าย"), vl + 8, 14 * FS, C.primary, 18, "left", true);
+  });
+  VIEW = { l: 0, r: 1e9 };
+  if (n > 1) { ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke(); }
+  const bar = 0.005 * K;
+  ctx.strokeStyle = C.muted; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(14, H - 12); ctx.lineTo(14 + bar, H - 12); ctx.stroke();
+  text(ctx, "5 mm", 14 + bar / 2, H - 12 - 12 * FS, C.muted, 16, "center");
+}
+
+// เครื่องชั่งสปริง: ปลายล่างของเครื่องชั่งอยู่ที่ yHook (dir = -1 ตัวเครื่องอยู่เหนือ, +1 อยู่ใต้)
+function drawSpring(ctx, x, yHook, len, T, rangeN, dir) {
+  const w = 30, gap = 10;
+  const y0 = dir < 0 ? yHook - gap - len : yHook + gap;   // ขอบบนของตัวเครื่อง
+  const y1 = y0 + len;
+  ctx.strokeStyle = C.muted; ctx.lineWidth = 1.3; ctx.beginPath();
+  if (dir < 0) { ctx.moveTo(x, y1); ctx.lineTo(x, yHook); } else { ctx.moveTo(x, yHook); ctx.lineTo(x, y0); }
+  ctx.stroke();
+  ctx.fillStyle = C.card; ctx.strokeStyle = C.secondary; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.rect(x - w / 2, y0, w, len); ctx.fill(); ctx.stroke();
+  const t0 = y0 + 10, t1 = y1 - 10, f = Math.max(0, Math.min(1.05, T / rangeN));
+  for (let i = 0; i <= 5; i++) {
+    const y = dir < 0 ? t0 + (t1 - t0) * i / 5 : t1 - (t1 - t0) * i / 5;
+    ctx.strokeStyle = C.muted; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + w / 2 - 8, y); ctx.lineTo(x + w / 2, y); ctx.stroke();
+    if (S.showNum) {
+      const v = rangeN * i / 5;
+      text(ctx, v === 0 ? "0" : String(+v.toPrecision(3)), x + w / 2 + 4, y, C.muted, 15, "left");
+    }
+  }
+  // สปริงยืดตามแรง ตัวชี้เลื่อนตาม
+  const yp = dir < 0 ? t0 + (t1 - t0) * f : t1 - (t1 - t0) * f;
+  const ys = dir < 0 ? y0 + 4 : y1 - 4;
+  ctx.strokeStyle = C["metal-d"]; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(x, ys);
+  const n = 10;
+  for (let i = 1; i <= n; i++) { const y = ys + (yp - ys) * i / n; ctx.lineTo(x + (i % 2 ? 6 : -6), y); }
+  ctx.lineTo(x, yp); ctx.stroke();
+  ctx.strokeStyle = C.alert; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - w / 2 + 3, yp); ctx.lineTo(x + w / 2 - 3, yp); ctx.stroke();
+  // ด้ามจับ
+  const yH = dir < 0 ? y0 - 4 : y1 + 4;
+  ctx.strokeStyle = C.muted; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(x, dir < 0 ? y0 : y1); ctx.lineTo(x, yH); ctx.stroke();
+  ctx.fillStyle = C.secondary; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x - 22, yH - (dir < 0 ? 9 : 0), 44, 9, 4) : ctx.rect(x - 22, yH - (dir < 0 ? 9 : 0), 44, 9); ctx.fill();
+  if (S.showNum) {
+    if (dir < 0) textIn(ctx, sci(T, "N"), x, yH - 9 - 13 * FS, C.alert, 18, "center", true);
+    else textIn(ctx, sci(T, "N"), x - w / 2 - 6, (y0 + y1) / 2, C.alert, 18, "right", true);
+  }
+}
+
+// ---------- ภาพตัด: ลวด xy ----------
+function drawFrameScene(ctx, W, H) {
+  const cx = W * 0.42, y0 = H * 0.09;
+  const K = (H * 0.5) / L_MAX;
+  const yW = y0 + S.L * K, tw = 9;
+  // ฟิล์ม
+  ctx.fillStyle = C.water; ctx.fillRect(cx - tw, y0, 2 * tw, yW - y0);
+  const on1 = revealed(1), on2 = revealed(2);
+  ctx.lineWidth = on1 ? 2.5 + 3 * pulse(1) : 1.5; ctx.strokeStyle = on1 ? C.l1 : C["water-top"];
+  ctx.beginPath(); ctx.moveTo(cx - tw, y0); ctx.lineTo(cx - tw, yW); ctx.stroke();
+  ctx.lineWidth = on2 ? 2.5 + 3 * pulse(2) : 1.5; ctx.strokeStyle = on2 ? C.l2 : C["water-top"];
+  ctx.beginPath(); ctx.moveTo(cx + tw, y0); ctx.lineTo(cx + tw, yW); ctx.stroke();
+  // ขดลวดด้านบนและลวด xy
+  ctx.fillStyle = C.frame; ctx.beginPath(); ctx.arc(cx, y0, 11, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = C.metal; ctx.strokeStyle = C["metal-d"]; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(cx, yW, 9, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+  text(ctx, "ขดลวดตัวยู (ด้านบน)", cx + 18, y0, C.muted, 17, "left");
+  text(ctx, "ลวด xy", cx + 16, yW + 2, C.ink, 18, "left", true);
+  text(ctx, "ฟิล์มของเหลว (ความหนาวาดเกินจริง)", cx + 18, y0 + 24, C.secondary, 17, "left");
+  const ym = (y0 + yW) / 2 + 8;
+  if (on1) { badge(ctx, 1, cx - tw - 18, ym, C.l1); text(ctx, "ผิวหน้า", cx - tw - 32, ym, C.l1, 19, "right", true); }
+  if (on2) { badge(ctx, 2, cx + tw + 18, ym, C.l2); text(ctx, "ผิวหลัง", cx + tw + 32, ym, C.l2, 19, "left", true); }
+  // เครื่องชั่งดึงลง
+  const T = 2 * gam() * S.d, rangeN = niceCeil(1.25 * 2 * LIQ.reduce((a, q) => Math.max(a, q.g), 0) * 0.06);
+  drawSpring(ctx, cx, yW + 9, H * 0.28, T, rangeN, 1);
+  if (S.showArrow) {
+    const pxN = (H * 0.22) / rangeN;
+    arrow(ctx, cx - tw, yW - 9, cx - tw, yW - 9 - gam() * S.d * pxN, C["f-s"], 3);
+    arrow(ctx, cx + tw, yW - 9, cx + tw, yW - 9 - gam() * S.d * pxN, C["f-s"], 3);
+    const yt = yW - 9 - gam() * S.d * pxN;
+    text(ctx, "γd", cx - tw - 6, yt, C["f-s"], 18, "right", true);
+    text(ctx, "γd", cx + tw + 6, yt, C["f-s"], 18, "left", true);
+    arrow(ctx, cx - 40, yW + 6, cx - 40, yW + 6 + T * pxN, C["f-t"], 3);
+    text(ctx, "T", cx - 46, yW + 6 + T * pxN, C["f-t"], 19, "right", true);
+  }
+}
+
+// ---------- ภาพตัดหลัก ----------
+function drawScene() {
+  const { ctx, W, H } = fit(el.scene);
+  ctx.clearRect(0, 0, W, H);
+  if (S.mode === "frame") { drawFrameScene(ctx, W, H); return; }
+  const Ys = H * 0.74, Hc = H;
+  const types = S.mode === "compare" ? ["ring", "coin"] : [S.mode];
+  const n = types.length, half = W / (2 * n);
+  const K = Math.min((W / n) / 0.085, (H * 0.55) / 0.04);
+  const rangeN = niceCeil(1.2 * Math.max(...types.map((t) => S.m * G + gam() * ellOf(t))));
+  ctx.fillStyle = C.air; ctx.fillRect(0, 0, W, Ys);
+  types.forEach((t, i) => {
+    const cx = half * (2 * i + 1);
+    VIEW = { l: cx - half, r: cx + half };
+    drawDiscScene(ctx, t, cx, Ys, K, Hc, cx - half, cx + half, rangeN, false);
+    if (n > 1) text(ctx, t === "ring" ? "วงแหวน" : "เหรียญ", cx - half + 8, 14 * FS, C.primary, 20, "left", true);
+    VIEW = { l: 0, r: 1e9 };
+  });
+  if (n > 1) { ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke(); }
+  text(ctx, "ของเหลว", 10, H - 14 * FS, C.secondary, 18, "left");
+}
+
+// ---------- ภาพมองจากด้านบน / ด้านหน้า ----------
+function drawTop() {
+  const { ctx, W, H } = fit(el.top);
+  ctx.clearRect(0, 0, W, H);
+  if (S.mode === "frame") { drawFront(ctx, W, H); return; }
+  const types = S.mode === "compare" ? ["ring", "coin"] : [S.mode];
+  const n = types.length;
+  const K = Math.min((W / n) * 0.78, H * 0.66) / 0.06;
+  types.forEach((t, i) => {
+    const cx = (W / n) * (i + 0.5), cy = H * 0.47 + (n > 1 ? 8 * FS : 0), R = (S.d / 2) * K;
+    const att = !S.o[t].broken;
+    if (t === "ring") {
+      ctx.strokeStyle = C.metal; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.stroke();
+      if (att && revealed(1)) { ctx.strokeStyle = C.l1; ctx.lineWidth = 2.5 + 3 * pulse(1); ctx.beginPath(); ctx.arc(cx, cy, R + 5, 0, 2 * Math.PI); ctx.stroke(); }
+      if (att && revealed(2)) { ctx.strokeStyle = C.l2; ctx.lineWidth = 2.5 + 3 * pulse(2); ctx.beginPath(); ctx.arc(cx, cy, R - 5, 0, 2 * Math.PI); ctx.stroke(); }
+      if (att && revealed(1)) { const a = -Math.PI / 4; badge(ctx, 1, cx + (R + 17) * Math.cos(a), cy + (R + 17) * Math.sin(a), C.l1); }
+      if (att && revealed(2)) { const a = -Math.PI / 4; badge(ctx, 2, cx + (R - 17) * Math.cos(a), cy + (R - 17) * Math.sin(a), C.l2); }
+    } else {
+      ctx.fillStyle = C.brass; ctx.strokeStyle = C["brass-d"]; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+      if (att && revealed(1)) {
+        ctx.strokeStyle = C.l1; ctx.lineWidth = 2.5 + 3 * pulse(1); ctx.beginPath(); ctx.arc(cx, cy, R + 4, 0, 2 * Math.PI); ctx.stroke();
+        const a = -Math.PI / 4; badge(ctx, 1, cx + (R + 16) * Math.cos(a), cy + (R + 16) * Math.sin(a), C.l1);
+      }
+    }
+    // เส้นบอกขนาด d
+    const yd = cy + R + 16;
+    if (yd < H - 6) {
+      ctx.strokeStyle = C.muted; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx - R, yd); ctx.lineTo(cx + R, yd); ctx.stroke();
+      arrow(ctx, cx, yd, cx - R, yd, C.muted, 1); arrow(ctx, cx, yd, cx + R, yd, C.muted, 1);
+      ctx.fillStyle = C.card; ctx.fillRect(cx - 9, yd - 10, 18, 20);
+      text(ctx, "d", cx, yd, C.muted, 19, "center", true);
+    }
+    if (!att) text(ctx, "หลุดแล้ว ไม่มีเส้นขอบ", cx, H - 12 * FS, C.alert, 17, "center", true);
+    if (n > 1) text(ctx, t === "ring" ? "วงแหวน" : "เหรียญ", cx, 13 * FS, C.primary, 19, "center", true);
+  });
+}
+function drawFront(ctx, W, H) {
+  const K = Math.min(W * 0.62, H * 0.74) / 0.06;
+  const cx = W / 2, w = S.d * K, y0 = H * 0.1, Lmax = H * 0.72;
+  const yW = y0 + 30 + (S.L - L_MIN) / (L_MAX - L_MIN) * (Lmax - 30);
+  // ขดลวดตัวยู (คว่ำ)
+  ctx.strokeStyle = C.frame; ctx.lineWidth = 4; ctx.beginPath();
+  ctx.moveTo(cx - w / 2, y0 + Lmax + 14); ctx.lineTo(cx - w / 2, y0); ctx.lineTo(cx + w / 2, y0); ctx.lineTo(cx + w / 2, y0 + Lmax + 14); ctx.stroke();
+  ctx.fillStyle = C.water; ctx.fillRect(cx - w / 2, y0, w, yW - y0);
+  ctx.strokeStyle = C.metal; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(cx - w / 2 - 10, yW); ctx.lineTo(cx + w / 2 + 10, yW); ctx.stroke();
+  text(ctx, "x", cx - w / 2 - 14, yW, C.ink, 19, "right", true);
+  text(ctx, "y", cx + w / 2 + 14, yW, C.ink, 19, "left", true);
+  if (revealed(2)) { ctx.strokeStyle = C.l2; ctx.lineWidth = 2.5 + 3 * pulse(2); ctx.setLineDash([7, 5]); ctx.beginPath(); ctx.moveTo(cx - w / 2, yW - 9); ctx.lineTo(cx + w / 2, yW - 9); ctx.stroke(); ctx.setLineDash([]); badge(ctx, 2, cx + w / 2 + 16, yW - 22, C.l2); }
+  if (revealed(1)) { ctx.strokeStyle = C.l1; ctx.lineWidth = 2.5 + 3 * pulse(1); ctx.beginPath(); ctx.moveTo(cx - w / 2, yW - 4); ctx.lineTo(cx + w / 2, yW - 4); ctx.stroke(); badge(ctx, 1, cx - w / 2 - 16, yW - 22, C.l1); }
+  if (S.showArrow) for (let i = 1; i < 8; i++) { const x = cx - w / 2 + w * i / 8; arrow(ctx, x, yW - 4, x, yW - 26, C["f-s"], 1.8); }
+  // d
+  const yd = y0 - 10;
+  ctx.strokeStyle = C.muted; ctx.lineWidth = 1; arrow(ctx, cx, yd, cx - w / 2, yd, C.muted, 1); arrow(ctx, cx, yd, cx + w / 2, yd, C.muted, 1);
+  ctx.fillStyle = C.card; ctx.fillRect(cx - 9, yd - 10, 18, 20); text(ctx, "d", cx, yd, C.muted, 19, "center", true);
+  if (revealed(2)) text(ctx, "ผิวหลังอยู่ซ้อนหลังผิวหน้า (เส้นประ)", cx, H - 12, C.muted, 16, "center");
+}
+
+// ---------- ข้อความ ----------
+function sumHTML() {
+  if (!S.showCount) return '<span style="color:var(--muted)">ผิวของเหลวสัมผัสวัตถุกี่เส้น แต่ละเส้นยาวเท่าใด</span>';
+  const t = S.mode === "compare" ? null : S.mode;
+  const one = (type) => {
+    if (S.o[type] && S.o[type].broken) return type === "ring" ? "วงแหวน: หลุดแล้ว" : "เหรียญ: หลุดแล้ว";
+    const ls = lines(type), parts = [];
+    ls.forEach((L, i) => { if (revealed(i + 1)) parts.push('<span class="c' + (i + 1) + '">' + L.sym + "</span>"); });
+    let s = "ℓ = " + (parts.length ? parts.join(" + ") : "…");
+    if (revealed(ls.length + 1)) {
+      s += " = <b>" + (type === "ring" ? "2πd" : type === "coin" ? "πd" : "2d") + "</b>";
+      if (S.showNum) s += " = " + ellOf(type).toFixed(3) + " m";
+    }
+    return (S.mode === "compare" ? (type === "ring" ? "วงแหวน " : "เหรียญ ") : "") + s;
+  };
+  return t ? one(t) : one("ring") + "<br>" + one("coin");
+}
+function statusHTML() {
+  if (S.mode === "frame") {
+    return S.showCount
+      ? "<b>ดึงลวด xy ลงให้ฟิล์มยาวขึ้น</b> ฟิล์มมีผิวหน้าและผิวหลัง แต่ละผิวดึงลวดด้วยแรง γd รวม F = 2γd ซึ่งไม่ขึ้นกับความยาวของฟิล์ม ฟิล์มยาวขึ้นแต่แรงดึงคงเดิม"
+      : "<b>ดึงลวด xy ลงให้ฟิล์มยาวขึ้น</b> สังเกตเครื่องชั่งสปริงว่าแรงดึงเปลี่ยนหรือไม่ และฟิล์มสัมผัสลวด xy กี่ผิว";
+  }
+  const types = S.mode === "compare" ? ["ring", "coin"] : [S.mode];
+  const st = stateOf(types[0]);
+  const name = S.mode === "compare" ? "วงแหวนและเหรียญ" : (S.mode === "ring" ? "วงแหวน" : "เหรียญ");
+  if (st.broken) return "<b>ผิวของเหลวขาด " + name + "หลุดจากผิว</b> แรงดึงลดลงเหลือ mg แรงดึงสูงสุดก่อนหลุดคือ T = mg + γℓ" + (S.mode === "compare" ? " วงแหวนต้องใช้แรงมากกว่าเพราะมีเส้นขอบมากกว่า" : "");
+  if (S.pull <= 0) return "<b>" + name + "แตะผิวของเหลว</b> กดปุ่ม ดึงช้า ๆ หรือลากวัตถุขึ้น" + (S.showCount ? "" : " แล้วสังเกตว่าผิวของเหลวสัมผัสวัตถุกี่เส้น");
+  const deg = st.th * 180 / Math.PI;
+  let s = "<b>ผิวของเหลวถูกดึงขึ้นตาม" + name + "</b> ผิวทำมุม " + deg.toFixed(0) + "° กับแนวระดับ ";
+  s += deg > 80 ? "ผิวเกือบตั้งดิ่ง แรงดึงผิวในแนวดิ่งเกือบเท่ากับ γℓ ผิวใกล้จะขาด" : "ยิ่งดึง ผิวยิ่งเอียงเข้าแนวดิ่ง แรงดึงผิวในแนวดิ่งจึงเพิ่มขึ้น";
+  if (S.showCount) s += S.mode === "coin" ? " · ใต้เหรียญเป็นของเหลว จึงมีผิวสัมผัสเฉพาะขอบนอก" : S.mode === "ring" ? " · ในวงแหวนเป็นอากาศ จึงมีผิวสัมผัสทั้งขอบนอกและขอบใน" : " · วงแหวนมี 2 เส้นขอบ เหรียญมี 1 เส้นขอบ";
+  return s;
+}
+function numHTML() {
+  if (!S.showNum) return '<div class="hidden-msg">ตัวเลขถูกซ่อนอยู่ ลองคำนวณก่อน แล้วจึงเปิด "ตัวเลข"</div>';
+  const g = gam();
+  if (S.mode === "frame") {
+    const F = 2 * g * S.d;
+    return '<div class="tblwrap"><table>' +
+      "<tr><th>ปริมาณ</th><th style='text-align:right'>ค่า</th></tr>" +
+      "<tr><td>γ (N/m)</td><td class='num'>" + g + "</td></tr>" +
+      "<tr><td>d (m)</td><td class='num'>" + S.d.toFixed(3) + "</td></tr>" +
+      "<tr><td>ℓ = 2d (m)</td><td class='num'>" + (2 * S.d).toFixed(3) + "</td></tr>" +
+      "<tr><td>ความยาวฟิล์ม (cm)</td><td class='num'>" + (S.L * 100).toFixed(1) + "</td></tr>" +
+      "<tr><td>F = γℓ (N)</td><td class='num'>" + sci(F) + "</td></tr>" +
+      "<tr><td>T = F (N)</td><td class='num'>" + sci(F) + "</td></tr></table></div>";
+  }
+  const types = S.mode === "compare" ? ["ring", "coin"] : [S.mode];
+  const sts = types.map(stateOf);
+  const row = (label, f) => "<tr><td>" + label + "</td>" + sts.map((s, i) => "<td class='num'>" + f(s, types[i]) + "</td>").join("") + "</tr>";
+  const head = "<tr><th>ปริมาณ</th>" + types.map((t) => "<th style='text-align:right'>" + (t === "ring" ? "วงแหวน" : "เหรียญ") + "</th>").join("") + "</tr>";
+  return '<div class="tblwrap"><table>' + head +
+    row("γ (N/m)", () => String(g)) +
+    row("ℓ (m)", (s) => s.ell.toFixed(3)) +
+    row("mg (N)", (s) => sci(s.mg)) +
+    row("γℓ (N)", (s) => sci(s.Fmax)) +
+    row("γℓ sinθ (N)", (s) => sci(s.Fs)) +
+    row("T (N)", (s) => sci(s.T)) +
+    row("T สูงสุด (N)", (s) => sci(s.Tmax)) +
+    "</table></div><p class='note'>T = mg + γℓ sinθ · ขณะจะหลุด θ = 90° จึงได้ T = mg + γℓ</p>";
+}
+
+// ---------- ควบคุม ----------
+function setPullRange() {
+  if (S.mode === "frame") {
+    el.pull.min = L_MIN * 100; el.pull.max = L_MAX * 100; el.pull.step = 0.1; el.pull.value = S.L * 100;
+    el.pullName.textContent = "ความยาวฟิล์ม (ดึงลง)"; el.dName.textContent = "ความยาวลวด xy (d)";
+    el.mWrap.style.display = "none"; el.bAuto.textContent = "ดึงลงช้า ๆ";
+  } else {
+    el.pull.min = 0; el.pull.max = PULL_MAX * 1000; el.pull.step = 0.02; el.pull.value = S.pull * 1000;
+    el.pullName.textContent = "ระยะที่ดึงขึ้น"; el.dName.textContent = "เส้นผ่านศูนย์กลาง d";
+    el.mWrap.style.display = ""; el.bAuto.textContent = "ดึงขึ้นช้า ๆ";
+  }
+}
+function labels() {
+  el.pullV.textContent = S.mode === "frame" ? (S.L * 100).toFixed(1) + " cm" : (S.pull * 1000).toFixed(2) + " mm";
+  el.dV.textContent = (S.d * 100).toFixed(1) + " cm";
+  el.mV.textContent = (S.m * 1000).toFixed(1) + " g";
+  const f = S.mode === "frame";
+  el.sceneTitle.textContent = f ? "ภาพตัดขวางของลวด xy" : "ภาพตัดผ่านกลางวัตถุ";
+  el.sceneSub.textContent = f ? "มองตามแนวลวด" : "ขนาดตามจริง (ลวดวงแหวนวาดหนาขึ้น)";
+  el.topTitle.textContent = f ? "มองจากด้านหน้า" : "มองจากด้านบน";
+  el.topSub.textContent = f ? "แบบรูป 17.9 ก." : "เส้นขอบที่ผิวสัมผัสวัตถุ";
+}
+function resetAll() {
+  S.auto = false; S.pull = 0; S.L = 0.02;
+  S.o.ring = freshObj(); S.o.coin = freshObj(); resetMax();
+  setPullRange(); labels();
+}
+el.obj.addEventListener("change", () => { S.mode = el.obj.value; document.body.className = "m-" + S.mode; resetAll(); if (S.showCount) S.revealT0 = performance.now(); });
+el.liq.addEventListener("change", () => { S.liq = +el.liq.value; updatePhys(); resetMax(); });
+el.dia.addEventListener("input", () => { S.d = el.dia.value / 100; labels(); resetMax(); });
+el.mass.addEventListener("input", () => { S.m = el.mass.value / 1000; labels(); resetMax(); });
+el.pull.addEventListener("input", () => {
+  S.auto = false;
+  if (S.mode === "frame") S.L = el.pull.value / 100; else { S.pull = el.pull.value / 1000; updatePhys(); }
+  labels();
+});
+el.sCount.addEventListener("change", () => { S.showCount = el.sCount.checked; S.revealT0 = performance.now(); });
+el.sArrow.addEventListener("change", () => { S.showArrow = el.sArrow.checked; });
+el.sNum.addEventListener("change", () => { S.showNum = el.sNum.checked; });
+el.bReset.addEventListener("click", resetAll);
+$("bAssume").addEventListener("click", () => { $("assumeBox").hidden = false; });
+$("bClose").addEventListener("click", () => { $("assumeBox").hidden = true; });
+$("assumeBox").addEventListener("click", (e) => { if (e.target.id === "assumeBox") $("assumeBox").hidden = true; });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("assumeBox").hidden = true; });
+el.bAuto.addEventListener("click", () => {
+  if (S.mode === "frame") { if (S.L >= L_MAX - 1e-6) S.L = L_MIN; }
+  else if (S.pull >= PULL_MAX - 1e-6 || S.o.ring.broken || S.o.coin.broken) { S.pull = 0; updatePhys(); resetMax(); }
+  S.auto = true;
+});
+
+// ลากวัตถุบนภาพตัด
+let drag = null;
+el.scene.addEventListener("pointerdown", (e) => {
+  drag = { y: e.clientY, p: S.mode === "frame" ? S.L : S.pull };
+  S.auto = false; el.scene.setPointerCapture(e.pointerId); el.scene.style.cursor = "grabbing"; e.preventDefault();
+});
+el.scene.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const H = el.scene.clientHeight, W = el.scene.clientWidth;
+  if (S.mode === "frame") {
+    const K = (H * 0.5) / L_MAX;
+    S.L = Math.min(L_MAX, Math.max(L_MIN, drag.p + (e.clientY - drag.y) / K));
+  } else {
+    const n = S.mode === "compare" ? 2 : 1, K = Math.min((W / n) / 0.085, (H * 0.55) / 0.04);
+    S.pull = Math.min(PULL_MAX, Math.max(0, drag.p + (drag.y - e.clientY) / K / 3));
+    updatePhys();
+  }
+  setPullRange(); labels();
+});
+const endDrag = () => { drag = null; el.scene.style.cursor = "grab"; };
+el.scene.addEventListener("pointerup", endDrag);
+el.scene.addEventListener("pointercancel", endDrag);
+
+// ---------- วนรอบ ----------
+let last = performance.now(), lastHTML = { s: "", n: "", u: "" };
+function setHTML(node, key, html) { if (lastHTML[key] !== html) { node.innerHTML = html; lastHTML[key] = html; } }
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (S.auto) {
+    if (S.mode === "frame") { S.L = Math.min(L_MAX, S.L + 0.008 * dt); if (S.L >= L_MAX) S.auto = false; }
+    else { S.pull = Math.min(PULL_MAX, S.pull + 0.0008 * dt); updatePhys(); if (S.pull >= PULL_MAX) S.auto = false; }
+    el.pull.value = S.mode === "frame" ? S.L * 100 : S.pull * 1000; labels();
+  }
+  for (const t of ["ring", "coin"]) { const o = S.o[t]; if (o.broken && o.relax > 0) o.relax = Math.max(0, o.relax - dt / 0.35); }
+  updateFS(); drawScene(); drawZoom(); drawTop();
+  setHTML(el.status, "s", statusHTML());
+  setHTML(el.numBox, "n", numHTML());
+  setHTML(el.sum, "u", sumHTML());
+  requestAnimationFrame(frame);
+}
+
+// ค่าตั้งต้น (Safari จำค่าฟอร์มเดิมเมื่อโหลดหน้าใหม่ จึงตั้งค่าใหม่ทุกครั้ง)
+document.body.className = "m-ring";
+el.obj.value = "ring"; el.liq.value = "0"; el.dia.value = "4.0"; el.mass.value = "1.0";
+el.sCount.checked = false; el.sArrow.checked = false; el.sNum.checked = false;
+readColors();
+const mq = window.matchMedia("(prefers-color-scheme: dark)");
+if (mq.addEventListener) mq.addEventListener("change", readColors);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(readColors);
+resetAll();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
