@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แรงพยุงของของเหลว</title>
+<!--
+  Simulation เกี่ยวกับแรงพยุงของของเหลว
+  ฟิสิกส์ 2 (ว31112) แผนที่ 02 สไลด์ "ชวนคิด: ชั่งวัตถุในอากาศและในน้ำ" ใช้แทนกิจกรรม 17.6 ที่ไม่ได้ทำจริง
+  อุปกรณ์ตามกิจกรรม 17.6 หนังสือเรียน ฟิสิกส์ เล่ม 5 สสวท. หน้า 232–233
+    เครื่องชั่งสปริง วัตถุที่ไม่ละลายน้ำ ถ้วยยูเรกา บีกเกอร์ เครื่องชั่งน้ำหนัก
+  ค่าเริ่มต้น: แท่งเหล็กมวล 500 g ตามตัวอย่างผลกิจกรรม คู่มือครู ฟิสิกส์ เล่ม 5 หน้า 261
+  ความหนาแน่นของโลหะ: ไม่มีในหนังสือเรียน ใช้ค่ามาตรฐานที่อุณหภูมิห้อง
+    (CRC Handbook of Chemistry and Physics) เหล็ก 7870 · ตะกั่ว 11340 · อะลูมิเนียม 2700 kg/m^3
+  ก้อนโลหะทุกชนิดปริมาตรเท่ากัน = ปริมาตรของเหล็ก 500 g (63.5 cm^3) เพื่อเทียบแรงพยุงของโลหะต่างชนิด (แบบฝึกหัดท้ายบทที่ 17 ข้อ 5)
+  ความหนาแน่นของน้ำ น้ำเกลือ กลีเซอรอล: คู่มือครู ฟิสิกส์ เล่ม 5 หน้า 253 (ชุดเดียวกับ Simulation ความดันในของเหลว)
+  ค่าที่แสดงเป็นค่าตามทฤษฎี g = 9.8 m/s^2 ไม่มีความคลาดเคลื่อนสุ่ม
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #4A2033; --secondary: #1E6670; --accent: #E2772E; --alert: #AD3426;
+  --ink: #2B2427; --muted: #7a6d72; --paper: #FCF8F3; --card: #ffffff; --line: #e6dcd3;
+  --glass-edge: #8aa3ad; --scale-body: #6fb37a; --device: #5d5558; --lcd: #dfe8d2; --lcd-ink: #22301c;
+  --f-w: #AD3426; --f-b: #1F5FA8; --f-t: #2E8B3E;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #f0c6d6; --secondary: #6cc3cc; --accent: #f29a5c; --alert: #ef7b6c;
+    --ink: #f1e9e4; --muted: #b3a6ab; --paper: #1d1719; --card: #2a2225; --line: #43383c;
+    --glass-edge: #7d949c; --scale-body: #4f8f5a; --device: #8a8084; --lcd: #c9d6b8; --lcd-ink: #1b2616;
+    --f-w: #ef7b6c; --f-b: #7fb0ef; --f-t: #7ccf88;
+  }
+}
+:root[data-theme="dark"] {
+  --primary: #f0c6d6; --secondary: #6cc3cc; --accent: #f29a5c; --alert: #ef7b6c;
+  --ink: #f1e9e4; --muted: #b3a6ab; --paper: #1d1719; --card: #2a2225; --line: #43383c;
+  --glass-edge: #7d949c; --scale-body: #4f8f5a; --device: #8a8084; --lcd: #c9d6b8; --lcd-ink: #1b2616;
+  --f-w: #ef7b6c; --f-b: #7fb0ef; --f-t: #7ccf88;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: "THSarabunLocal", "Sarabun", sans-serif; font-size: 21px; line-height: 1.35;
+}
+header { padding: 10px 20px 6px; border-bottom: 3px solid var(--accent); display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+header h1 { margin: 0; font-size: 34px; color: var(--primary); }
+header span { color: var(--muted); font-size: 19px; }
+main { display: grid; grid-template-columns: 290px minmax(0, 1.3fr) minmax(0, 1fr); gap: 14px; padding: 14px 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.card h2 { margin: 0 0 6px; font-size: 23px; color: var(--secondary); }
+.card h2.sub { margin-top: 12px; }
+label { display: block; margin-top: 8px; }
+.val { font-weight: 700; color: var(--primary); }
+input[type=range] { width: 100%; accent-color: var(--accent); height: 30px; }
+.presets { display: flex; gap: 5px; }
+button { font: inherit; font-size: 21px; font-weight: 700; padding: 6px 8px; border-radius: 8px; border: none; cursor: pointer; }
+.presets button { flex: 1 1 auto; font-size: 18px; padding: 4px 5px; background: var(--line); color: var(--ink); white-space: nowrap; }
+.presets button.on { background: var(--secondary); color: #fff; }
+.readout { text-align: center; white-space: nowrap; }
+.info { font-size: 18px; color: var(--muted); text-align: center; margin-top: 2px; }
+#liqName { font-weight: 700; color: var(--secondary); }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+#refill { width: 100%; margin-top: 8px; background: var(--secondary); color: #fff; }
+#rec { background: var(--accent); color: #fff; }
+#clr { background: var(--line); color: var(--ink); }
+.check { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.check input { width: 22px; height: 22px; flex: none; accent-color: var(--accent); }
+#status { font-size: 17px; color: var(--muted); min-height: 1.35em; margin-top: 4px; }
+.note { font-size: 17px; color: var(--muted); margin-top: 10px; }
+#sceneWrap { position: relative; min-height: 580px; padding: 0; overflow: hidden; }
+#scene { display: block; width: 100%; height: 100%; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.right { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+table { width: 100%; border-collapse: collapse; font-size: 18px; }
+th, td { border-bottom: 1px solid var(--line); padding: 3px 4px; text-align: center; }
+th { color: var(--secondary); font-size: 16px; line-height: 1.15; vertical-align: bottom; }
+.empty { color: var(--muted); text-align: center; padding: 8px; }
+.tblwrap { max-height: 420px; overflow: auto; -webkit-overflow-scrolling: touch; }
+button, input, label { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#jsWarn { margin: 10px 16px 0; padding: 8px 14px; border-radius: 8px; background: var(--alert); color: #fff; font-size: 20px; }
+#jsErr { font-size: 15px; margin-top: 4px; word-break: break-all; }
+@media (min-width: 1001px) {
+  body { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: auto; }
+  main { flex: 1; min-height: 0; }
+  main > section { min-height: 0; overflow: auto; }
+  #sceneWrap { min-height: 480px; overflow: hidden; }
+  .right > .card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .right .tblwrap { max-height: none; flex: 1; min-height: 0; }
+}
+@media (min-width: 1001px) and (max-width: 1279px) {
+  main { grid-template-columns: 240px minmax(0, 1.3fr) minmax(0, 1fr); gap: 10px; padding: 10px; }
+  body { font-size: 19px; }
+}
+/* จอแนวนอน 16:9 และ 4:3 (โปรเจกเตอร์ ทีวี): แสดงทั้งหมดในหน้าจอเดียว ตัวอักษรขยายตามความสูงจอ */
+@media (min-width: 1000px) and (min-aspect-ratio: 5/4) and (min-height: 600px) {
+  body { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; font-size: clamp(15px, 2.3vh, 28px); }
+  header { padding: 0.25em 0.8em 0.15em; gap: 0.6em; }
+  header h1 { font-size: 1.4em; }
+  header span { font-size: 0.85em; }
+  main { flex: 1 1 auto; min-height: 0; grid-template-columns: 13.5em minmax(0, 1.05fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+         gap: 0.5em; padding: 0.5em 0.6em; }
+  main > section { min-height: 0; overflow: hidden; }
+  .card { padding: 0.35em 0.6em; }
+  .card h2 { font-size: 1.08em; margin-bottom: 0.15em; }
+  .card h2.sub { margin-top: 0.45em; }
+  label { margin-top: 0.25em; }
+  button { font-size: 0.95em; padding: 0.2em 0.4em; }
+  .presets button { font-size: 0.8em; }
+  .info { font-size: 0.8em; }
+  #refill { margin-top: 0.35em; }
+  .check { margin-top: 0.3em; }
+  .check input { width: 1em; height: 1em; }
+  input[type=range] { height: 1.3em; }
+  #status, .note { font-size: 0.72em; }
+  #sceneWrap { min-height: 0; }
+  .right { min-height: 0; }
+  .right > .card { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+  .right .tblwrap { max-height: none; flex: 1 1 0; min-height: 0; }
+  table { font-size: 0.8em; }
+  th { font-size: 0.8em; }
+  th, td { padding: 0.1em 0.2em; }
+}
+@media (max-width: 1000px) {
+  main { grid-template-columns: 1fr; padding: 12px 16px; }
+  #sceneWrap { min-height: 540px; }
+}
+/* iPad แนวตั้ง: ตั้งค่าคู่กับฉาก ตารางอยู่แถวล่าง */
+@media (min-width: 700px) and (max-width: 1000px) {
+  main { grid-template-columns: 250px minmax(0, 1fr); gap: 12px; }
+  #sceneWrap { min-height: 0; height: max(540px, min(720px, calc(100vh - 120px))); align-self: start; }
+  .right { grid-column: 1 / -1; }
+  body { font-size: 19px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>แรงพยุงของของเหลว</h1>
+  <span>ฟิสิกส์ 2 (ว31112) · ของไหลสถิต · ชั่งวัตถุในอากาศและในของเหลวด้วยเครื่องชั่งสปริง</span>
+</header>
+<!-- ข้อความนี้ถูกซ่อนเมื่อโปรแกรมเริ่มทำงานสำเร็จ ถ้ายังเห็นอยู่ แสดงว่าโปรแกรมไม่ทำงาน -->
+<div id="jsWarn">
+  <b>Simulation ยังไม่ทำงาน</b> <span id="jsMsg">เบราว์เซอร์นี้ไม่รันโปรแกรม ให้เปิดลิงก์ด้วย Safari หรือ Chrome หรือดูจากจอที่ครูฉาย</span>
+  <div id="jsErr"></div>
+</div>
+<script>
+// แสดงข้อผิดพลาดบนหน้าจอ เพื่อให้แจ้งผู้สอนได้ (ไม่มีหน้าต่าง console บน iPad)
+window.onerror = function (msg, src, line, col) {
+  var w = document.getElementById("jsWarn"), e = document.getElementById("jsErr");
+  if (!w || !e) return;
+  // คำเตือนของเบราว์เซอร์เรื่อง ResizeObserver ไม่ใช่ข้อผิดพลาดของโปรแกรม
+  if (String(msg).indexOf("ResizeObserver loop") >= 0) return true;
+  w.style.display = "block";
+  w.firstElementChild.textContent = "Simulation ทำงานผิดพลาด";
+  document.getElementById("jsMsg").textContent = "กรุณาถ่ายภาพหน้าจอนี้ส่งครู";
+  e.textContent = "ข้อผิดพลาด: " + msg + " (บรรทัด " + line + ":" + col + ") · " + navigator.userAgent;
+};
+</script>
+<main>
+  <section class="card" aria-label="ตั้งค่า">
+    <h2>วัตถุ</h2>
+    <div class="presets" id="objs"></div>
+    <div class="info" id="objInfo"></div>
+
+    <h2 class="sub">ของเหลวในถ้วยยูเรกา</h2>
+    <div class="presets" id="liqs"></div>
+    <label>ความหนาแน่นของของเหลว
+      <input type="range" id="rho" min="700" max="1500" step="10" value="1000" aria-label="ความหนาแน่นของของเหลว">
+      <div class="readout"><span id="liqName"></span> <span class="val" id="rhoOut"></span></div></label>
+    <button id="refill">เติมน้ำใหม่</button>
+    <div class="check"><input type="checkbox" id="showForce"><label for="showForce" style="margin:0">แสดงแรงที่กระทำต่อวัตถุ</label></div>
+
+    <h2 class="sub">บันทึกผล</h2>
+    <div class="btns">
+      <button id="rec">บันทึกค่า</button>
+      <button id="clr">ล้างตาราง</button>
+    </div>
+    <div id="status"></div>
+
+    <p class="note">ลากเครื่องชั่งสปริงขึ้นลงเพื่อหย่อนวัตถุลงในถ้วยยูเรกา · เครื่องชั่งน้ำหนักหักน้ำหนักบีกเกอร์แล้ว</p>
+    <p class="note">ก้อนโลหะทุกชนิดมีปริมาตรเท่ากัน · ความหนาแน่นของของเหลวตามคู่มือครู ฟิสิกส์ เล่ม 5 หน้า 253 · g = 9.8 m/s²</p>
+  </section>
+
+  <section class="card" id="sceneWrap" aria-label="เครื่องชั่งสปริงและถ้วยยูเรกา"><canvas id="scene"></canvas></section>
+
+  <section class="right">
+    <div class="card">
+      <h2>ผลการชั่ง</h2>
+      <div class="tblwrap"><table id="tbl"></table></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const G = 9.8;
+const VOL = 0.5 / 7870;                     // ปริมาตรของก้อนโลหะทุกชนิด = เหล็ก 500 g (m^3)
+const SIDE = Math.cbrt(VOL);                // ก้อนลูกบาศก์ ด้านยาว ≈ 3.99 cm
+const OBJECTS = [                           // CRC Handbook (อุณหภูมิห้อง)
+  { name: "เหล็ก", rho: 7870, col: "#7d8790" },
+  { name: "ตะกั่ว", rho: 11340, col: "#5b6170" },
+  { name: "อะลูมิเนียม", rho: 2700, col: "#c4cbd2" },
+];
+const LIQUIDS = [                           // คู่มือครู ฟิสิกส์ เล่ม 5 หน้า 253
+  { name: "น้ำ", rho: 1000 },
+  { name: "น้ำเกลือ", rho: 1100 },
+  { name: "กลีเซอรอล", rho: 1200 },
+];
+// ถ้วยยูเรกา (m): ทรงกระบอกเส้นผ่านศูนย์กลาง 10 cm สูง 15 cm ปากท่อสูง 12 cm
+const CAN_D = 0.10, CAN_A = Math.PI * CAN_D * CAN_D / 4, CAN_H = 0.15, SPOUT = 0.12;
+const BEAKER_D = 0.06, BEAKER_A = Math.PI * BEAKER_D * BEAKER_D / 4, BEAKER_H = 0.07, BEAKER_Y = 0.03;
+const STRING = 0.08, SCALE_H = 0.12, SCALE_MAX = 10;
+const YB_MIN = 0.006, YB_MAX = 0.17;        // ช่วงความสูงของก้นวัตถุจากก้นถ้วย
+const $ = id => document.getElementById(id);
+
+let obj = 0, rho = 1000, yb = 0.16, dragged = false;
+let Vw = 0, Vo = 0, lastFlow = -1e9;        // ปริมาตรของเหลวในถ้วย ปริมาตรที่ล้น เวลาที่ล้นล่าสุด
+const rows = [];
+
+const mass = () => OBJECTS[obj].rho * VOL;
+const subDepth = L => Math.max(0, Math.min(SIDE, L - yb));
+// ระดับผิวของเหลวในถ้วยเมื่อก้นวัตถุอยู่ที่ yb (ปริมาตรของเหลว + ส่วนที่จม = พื้นที่ × ระดับ)
+function level() {
+  const a2 = SIDE * SIDE, L0 = Vw / CAN_A;
+  if (L0 <= yb) return L0;
+  const L1 = (Vw - a2 * yb) / (CAN_A - a2);
+  if (L1 <= yb + SIDE) return L1;
+  return (Vw + a2 * SIDE) / CAN_A;
+}
+// ถ้าระดับเกินปากท่อ ของเหลวส่วนเกินล้นลงบีกเกอร์
+function settle() {
+  if (level() > SPOUT + 1e-12) {
+    const VwNew = SPOUT * CAN_A - SIDE * SIDE * Math.max(0, Math.min(SIDE, SPOUT - yb));
+    Vo += Vw - VwNew; Vw = VwNew; lastFlow = performance.now();
+  }
+}
+function refill() {
+  Vw = SPOUT * CAN_A - SIDE * SIDE * Math.max(0, Math.min(SIDE, SPOUT - yb));
+  Vo = 0; lastFlow = -1e9;
+}
+function reading() {
+  const L = level(), Vsub = SIDE * SIDE * subDepth(L);
+  const W = mass() * G, FB = rho * Vsub * G;
+  const r2 = x => Math.round(x * 100) / 100;
+  return { W, FB, T: W - FB, L, air: r2(W), now: r2(W - FB), vo: Math.round(Vo * 1e7) / 10, wo: r2(rho * Vo * G) };
+}
+
+// ---------- ส่วนควบคุม ----------
+function makeButtons(box, list, onPick) {
+  list.forEach((it, k) => {
+    const b = document.createElement("button");
+    b.textContent = it.name; b.dataset.k = k; b.onclick = () => onPick(k);
+    $(box).appendChild(b);
+  });
+}
+makeButtons("objs", OBJECTS, k => { obj = k; updateControls(); drawScene(); });
+makeButtons("liqs", LIQUIDS, k => setRho(LIQUIDS[k].rho));
+function liqName(r) { const p = LIQUIDS.find(p => p.rho === r); return p ? p.name : "กำหนดเอง"; }
+const fmtRho = r => (r / 1000).toFixed(2);
+// เปลี่ยนของเหลวต้องเทของเหลวเดิมทิ้ง จึงเติมใหม่และล้างบีกเกอร์
+function setRho(r) { rho = r; $("rho").value = r; refill(); updateControls(); drawScene(); }
+$("rho").addEventListener("input", () => setRho(+$("rho").value));
+function updateControls() {
+  document.querySelectorAll("#objs button").forEach(b => b.classList.toggle("on", +b.dataset.k === obj));
+  document.querySelectorAll("#liqs button").forEach(b => b.classList.toggle("on", LIQUIDS[+b.dataset.k].rho === rho));
+  $("objInfo").textContent = `มวล ${Math.round(mass() * 1000)} g · ปริมาตร ${(VOL * 1e6).toFixed(1)} cm³`;
+  $("liqName").textContent = liqName(rho);
+  $("rhoOut").textContent = `${fmtRho(rho)} × 10³ kg/m³`;
+}
+$("refill").onclick = () => { refill(); $("status").textContent = "เติมของเหลวถึงปากท่อและเทของเหลวในบีกเกอร์ทิ้งแล้ว"; drawScene(); };
+$("showForce").addEventListener("change", () => drawScene());
+$("rec").onclick = () => {
+  const R = reading();
+  rows.push({ obj: OBJECTS[obj].name, liq: liqName(rho), rho, air: R.air, now: R.now, vo: R.vo, wo: R.wo });
+  $("status").textContent = `บันทึกแล้ว: ${OBJECTS[obj].name} ใน${liqName(rho) === "กำหนดเอง" ? "ของเหลวที่กำหนดเอง" : liqName(rho)} อ่านได้ ${R.now.toFixed(2)} N`;
+  buildTable();
+};
+$("clr").onclick = () => { rows.length = 0; $("status").textContent = ""; buildTable(); };
+
+function buildTable() {
+  let html = "<tr><th>วัตถุ</th><th>ของเหลว</th><th>อ่านได้<br>ในอากาศ<br>(N)</th><th>อ่านได้<br>ในของเหลว<br>(N)</th>" +
+             "<th>ค่าที่<br>หายไป<br>(N)</th><th>ปริมาตร<br>ที่ล้น<br>(cm³)</th><th>น้ำหนัก<br>ที่ล้น<br>(N)</th></tr>";
+  if (!rows.length) html += `<tr><td class="empty" colspan="7">ยังไม่มีค่าที่บันทึก</td></tr>`;
+  rows.forEach(r => {
+    const liq = r.liq === "กำหนดเอง" ? `ρ ${fmtRho(r.rho)}` : r.liq;
+    html += `<tr><td>${r.obj}</td><td>${liq}</td><td>${r.air.toFixed(2)}</td><td>${r.now.toFixed(2)}</td>` +
+            `<td>${(r.air - r.now).toFixed(2)}</td><td>${r.vo.toFixed(1)}</td><td>${r.wo.toFixed(2)}</td></tr>`;
+  });
+  $("tbl").innerHTML = html;
+}
+
+// ---------- การวาด ----------
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function fitCanvas(c) {
+  const dpr = window.devicePixelRatio || 1, rect = c.getBoundingClientRect();
+  const w = Math.max(1, Math.round(rect.width)), hh = Math.max(1, Math.round(rect.height));
+  if (c.width !== w * dpr || c.height !== hh * dpr) { c.width = w * dpr; c.height = hh * dpr; }
+  const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h: hh };
+}
+const FONT = '"THSarabunLocal", "Sarabun", sans-serif';
+const LANDSCAPE = window.matchMedia("(min-width: 1000px) and (min-aspect-ratio: 5/4) and (min-height: 600px)");
+let FS = 1;
+function updateFS() { FS = LANDSCAPE.matches ? Math.max(0.95, Math.min(1.45, window.innerHeight / 760)) : 1; }
+const font = (size, weight = 400) => `${weight} ${Math.round(size * FS)}px ${FONT}`;
+function fitText(ctx, s, x, y, maxW, size, weight = 400, align = "center") {
+  let fs = Math.round(size * FS);
+  do { ctx.font = `${weight} ${fs}px ${FONT}`; } while (ctx.measureText(s).width > maxW && --fs > 11);
+  ctx.textAlign = align; ctx.fillText(s, x, y);
+}
+function roundRect(ctx, x, y, w, hh, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + hh, r); ctx.arcTo(x + w, y + hh, x, y + hh, r);
+  ctx.arcTo(x, y + hh, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function liquidColor(r) {
+  const t = Math.max(0, Math.min(1, (r - 700) / 800));
+  return `hsla(${205 - 20 * t}, ${50 + 25 * t}%, ${76 - 34 * t}%, ${0.45 + 0.4 * t})`;
+}
+function arrow(ctx, x, y0, y1, col, label, side) {
+  if (Math.abs(y1 - y0) < 3) return;
+  const dir = Math.sign(y1 - y0);
+  ctx.strokeStyle = ctx.fillStyle = col; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1 - dir * 8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x - 6, y1 - dir * 11); ctx.lineTo(x + 6, y1 - dir * 11); ctx.closePath(); ctx.fill();
+  ctx.font = `italic 700 ${Math.round(19 * FS)}px ${FONT}`; ctx.textBaseline = "middle";
+  ctx.textAlign = side > 0 ? "left" : "right";
+  const [main, sub] = label.split("_"), lx = x + side * 9, ly = y1 - dir * 10;
+  ctx.fillText(main, lx, ly);
+  if (sub) {   // ตัวห้อย เช่น F_B
+    const mw = ctx.measureText(main).width;
+    ctx.font = `700 ${Math.round(13 * FS)}px ${FONT}`; ctx.textAlign = "left";
+    ctx.fillText(sub, side > 0 ? lx + mw + 1 : lx + 1, ly + 6 * FS);
+  }
+}
+
+let geo = null;
+
+function drawScene() {
+  const { ctx, w, h: H } = fitCanvas($("scene"));
+  ctx.clearRect(0, 0, w, H);
+  const R = reading(), O = OBJECTS[obj];
+  const ink = css("--ink"), muted = css("--muted"), glass = css("--glass-edge"), card = css("--card");
+
+  const band = 78 * FS, foot = 34 * FS;
+  const s = Math.min((H - band - foot - 14) / 0.44, (w - 20) / 0.36, 1500);     // px ต่อเมตร
+  const y0 = H - foot - 10;                                                      // พื้นโต๊ะ
+  const Y = y => y0 - y * s;
+  const cx = Math.max(w * 0.36, 0.09 * s), half = CAN_D / 2 * s;
+  const xL = cx - half, xR = cx + half;
+
+  // ----- ของเหลวในถ้วยยูเรกา -----
+  const col = liquidColor(rho);
+  ctx.fillStyle = col; ctx.fillRect(xL, Y(R.L), xR - xL, Y(0) - Y(R.L));
+  // ----- ท่อล้นและบีกเกอร์ -----
+  const spY = Y(SPOUT), spX1 = xR + 0.045 * s, spY1 = spY + 0.012 * s;
+  const bx = xR + 0.075 * s, bHalf = BEAKER_D / 2 * s;
+  const bTop = Y(BEAKER_Y + BEAKER_H), bBot = Y(BEAKER_Y);
+  const flowing = performance.now() - lastFlow < 350;
+  if (flowing) {
+    ctx.strokeStyle = col; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(spX1, spY1); ctx.quadraticCurveTo(bx + 4, spY1 + 6, bx, bBot - Vo / BEAKER_A * s); ctx.stroke();
+  }
+  ctx.fillStyle = col;
+  const lvB = Vo / BEAKER_A * s;
+  ctx.fillRect(bx - bHalf, bBot - lvB, 2 * bHalf, lvB);
+  // ถ้วยยูเรกา
+  ctx.strokeStyle = glass; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(xL, Y(CAN_H)); ctx.lineTo(xL, Y(0)); ctx.lineTo(xR, Y(0)); ctx.lineTo(xR, Y(CAN_H)); ctx.stroke();
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(xR, spY - 5); ctx.lineTo(spX1, spY1 - 5); ctx.moveTo(xR, spY + 5); ctx.lineTo(spX1, spY1 + 5); ctx.stroke();
+  // บีกเกอร์และขีดปริมาตร (ทุก 10 cm³)
+  ctx.strokeStyle = glass; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(bx - bHalf, bTop); ctx.lineTo(bx - bHalf, bBot); ctx.lineTo(bx + bHalf, bBot); ctx.lineTo(bx + bHalf, bTop); ctx.stroke();
+  ctx.strokeStyle = muted; ctx.lineWidth = 1; ctx.fillStyle = muted; ctx.font = font(13); ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  for (let v = 10; v <= 120; v += 10) {
+    const yy = bBot - v * 1e-6 / BEAKER_A * s; if (yy < bTop + 2) break;
+    ctx.beginPath(); ctx.moveTo(bx - bHalf, yy); ctx.lineTo(bx - bHalf + (v % 50 === 0 ? 12 : 6), yy); ctx.stroke();
+    if (v % 50 === 0) ctx.fillText(v, bx - bHalf + 14, yy);
+  }
+  // เครื่องชั่งน้ำหนัก
+  const dev = css("--device");
+  const sx0 = bx - bHalf - 0.012 * s, sx1 = bx + bHalf + 0.012 * s;
+  ctx.fillStyle = dev; roundRect(ctx, sx0, Y(BEAKER_Y), sx1 - sx0, BEAKER_Y * s, 5); ctx.fill();
+  const lw = (sx1 - sx0) * 0.78, lh = BEAKER_Y * s * 0.62;
+  ctx.fillStyle = css("--lcd"); roundRect(ctx, (sx0 + sx1) / 2 - lw / 2, Y(BEAKER_Y) + (BEAKER_Y * s - lh) / 2, lw, lh, 3); ctx.fill();
+  ctx.fillStyle = css("--lcd-ink"); ctx.textBaseline = "middle";
+  fitText(ctx, `${R.wo.toFixed(2)} N`, (sx0 + sx1) / 2, Y(BEAKER_Y / 2), lw - 6, 20, 700);
+  // พื้นโต๊ะ
+  ctx.fillStyle = ink; ctx.globalAlpha = 0.75; ctx.fillRect(Math.min(xL - 20, 4), y0, Math.max(sx1 + 20, w - 4) - Math.min(xL - 20, 4), 6); ctx.globalAlpha = 1;
+
+  // ----- วัตถุ เชือก และเครื่องชั่งสปริง -----
+  const oTop = Y(yb + SIDE), oBot = Y(yb), oHalf = SIDE / 2 * s;
+  const g = ctx.createLinearGradient(cx - oHalf, 0, cx + oHalf, 0);
+  g.addColorStop(0, O.col); g.addColorStop(0.45, "#e8ecef"); g.addColorStop(1, O.col);
+  ctx.fillStyle = g; ctx.fillRect(cx - oHalf, oTop, 2 * oHalf, oBot - oTop);
+  ctx.strokeStyle = "#3d4248"; ctx.lineWidth = 1.5; ctx.strokeRect(cx - oHalf, oTop, 2 * oHalf, oBot - oTop);
+  // ผิวของเหลวทับวัตถุส่วนที่จม (ให้ดูเหมือนอยู่ในของเหลว)
+  const yL = Y(R.L);
+  if (yL < oBot) { ctx.fillStyle = col; ctx.globalAlpha = 0.55; ctx.fillRect(cx - oHalf, Math.max(yL, oTop), 2 * oHalf, oBot - Math.max(yL, oTop)); ctx.globalAlpha = 1; }
+  ctx.strokeStyle = liquidColor(Math.min(1500, rho + 300)); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(xL, yL); ctx.lineTo(xR, yL); ctx.stroke();
+
+  const hookY = Y(yb + SIDE + STRING), bodyBot = hookY - 0.01 * s, bodyTop = Y(yb + SIDE + STRING + SCALE_H);
+  const bw = Math.max(30, 0.042 * s);
+  ctx.strokeStyle = ink; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx, oTop); ctx.lineTo(cx, bodyBot); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, hookY - 2, 4, 0, 7); ctx.stroke();
+  // ตัวเครื่องชั่ง
+  ctx.fillStyle = css("--scale-body"); roundRect(ctx, cx - bw / 2, bodyTop, bw, bodyBot - bodyTop, 4); ctx.fill();
+  ctx.strokeStyle = "#2f5a36"; ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.lineWidth = 3; ctx.strokeStyle = ink;
+  ctx.beginPath(); ctx.arc(cx, bodyTop - 0.012 * s, 0.009 * s, 0, 7); ctx.stroke();
+  // สเกล 0–10 N
+  const t0 = bodyTop + 0.012 * s, t1 = bodyBot - 0.012 * s;
+  const yN = n => t0 + n / SCALE_MAX * (t1 - t0);
+  ctx.strokeStyle = "#173b1d"; ctx.fillStyle = "#173b1d"; ctx.lineWidth = 1; ctx.font = font(14, 700);
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  ctx.fillStyle = ink;
+  for (let n = 0; n <= SCALE_MAX; n += 0.5) {
+    const yy = yN(n), len = n % 1 === 0 ? 8 : 4;
+    ctx.beginPath(); ctx.moveTo(cx + bw / 2 - 3, yy); ctx.lineTo(cx + bw / 2 - 3 - len, yy); ctx.stroke();
+    if (n % 2 === 0) ctx.fillText(n, cx - bw / 2 - 4, yy);
+  }
+  // เข็มชี้
+  ctx.fillStyle = css("--alert");
+  ctx.fillRect(cx - 2, t0, 4, yN(R.T) - t0);
+  ctx.beginPath(); ctx.moveTo(cx - bw / 2 + 2, yN(R.T)); ctx.lineTo(cx + bw / 2 - 2, yN(R.T)); ctx.lineWidth = 2.5; ctx.strokeStyle = css("--alert"); ctx.stroke();
+
+  // ----- แผนภาพแรงที่กระทำต่อวัตถุ (กรอบด้านขวา) -----
+  if ($("showForce").checked) {
+    const ix0 = xR + 0.03 * s, ix1 = w - 8, iy0 = band + 6, iy1 = Y(BEAKER_Y + BEAKER_H) - 0.03 * s;
+    const iw = ix1 - ix0, ih = iy1 - iy0;
+    if (iw > 90 && ih > 140) {
+      roundRect(ctx, ix0, iy0, iw, ih, 8); ctx.fillStyle = card; ctx.fill();
+      ctx.strokeStyle = css("--line"); ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = muted; ctx.textBaseline = "alphabetic";
+      fitText(ctx, "แรงที่กระทำต่อวัตถุ", ix0 + iw / 2, iy0 + 22 * FS, iw - 10, 16, 700);
+      const qx = ix0 + iw * 0.45, qy = iy0 + 30 * FS + (ih - 30 * FS) / 2, q = Math.min(26, iw * 0.16);
+      ctx.fillStyle = O.col; ctx.fillRect(qx - q, qy - q, 2 * q, 2 * q);
+      ctx.strokeStyle = "#3d4248"; ctx.lineWidth = 1.5; ctx.strokeRect(qx - q, qy - q, 2 * q, 2 * q);
+      const k = ((ih - 30 * FS) / 2 - q - 14) / Math.max(R.W, 1e-6);
+      arrow(ctx, qx - q * 0.45, qy, qy + R.W * k, css("--f-w"), "mg", -1);
+      arrow(ctx, qx, qy - q, qy - q - R.T * k, css("--f-t"), "T", 1);
+      if (R.FB > 1e-4) arrow(ctx, qx + q * 0.45, qy + q + R.FB * k + 2, qy + q + 2, css("--f-b"), "F_B", 1);   // ลูกศรชี้ขึ้นเข้าหาผิวล่าง แบบรูป 17.18
+    }
+  }
+
+  // คำแนะนำการลาก
+  if (!dragged) {
+    ctx.fillStyle = css("--accent"); ctx.font = font(19, 700); ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    const hint = "ลากเครื่องชั่งสปริง ⇅", hy = (bodyTop + bodyBot) / 2;
+    if (cx - bw / 2 - 26 - ctx.measureText(hint).width > 4) { ctx.textAlign = "right"; ctx.fillText(hint, cx - bw / 2 - 26, hy); }
+    else { ctx.textAlign = "left"; ctx.fillText("⇅ ลากเครื่องชั่งสปริง", cx + bw / 2 + 10, hy); }
+  }
+
+  // ----- ค่าที่อ่านได้ (ส่วนบน) -----
+  const box = (bxc, title, value, c) => {
+    const bwid = Math.min(w * 0.46, 260 * FS), bh = band - 14;
+    roundRect(ctx, bxc - bwid / 2, 6, bwid, bh, 8); ctx.fillStyle = card; ctx.fill();
+    ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = muted; ctx.textBaseline = "alphabetic"; fitText(ctx, title, bxc, 6 + bh * 0.38, bwid - 10, 17);
+    ctx.fillStyle = c; fitText(ctx, value, bxc, 6 + bh * 0.86, bwid - 10, 30, 700);
+  };
+  box(w * 0.26, "เครื่องชั่งสปริงอ่านได้", `${R.now.toFixed(2)} N`, css("--primary"));
+  box(w * 0.74, "น้ำหนักของเหลวที่ล้นออกมา", `${R.wo.toFixed(2)} N`, css("--secondary"));
+
+  // ----- ชื่อใต้ภาพ -----
+  ctx.textBaseline = "alphabetic"; ctx.fillStyle = ink;
+  fitText(ctx, `ถ้วยยูเรกา · ${liqName(rho)}`, cx, y0 + 26 * FS, Math.max(120, 2 * half + 40), 17, 700);
+  fitText(ctx, `ล้น ${R.vo.toFixed(1)} cm³`, bx, y0 + 26 * FS, Math.max(90, sx1 - sx0 + 30), 17, 700);
+
+  geo = { s, Y, cx, bw, bodyTop, oBot, oHalf };
+}
+
+// ---------- การลากเครื่องชั่งสปริง ----------
+let drag = null;
+function ptr(e) { const r = $("scene").getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+function onScale(p) {
+  return geo && Math.abs(p.x - geo.cx) < Math.max(geo.bw / 2 + 16, geo.oHalf + 10) &&
+         p.y > geo.bodyTop - 0.03 * geo.s && p.y < geo.oBot + 10;
+}
+$("scene").addEventListener("pointerdown", e => {
+  const p = ptr(e);
+  if (!onScale(p)) return;
+  drag = { y: p.y, yb };
+  $("scene").setPointerCapture(e.pointerId); e.preventDefault();
+});
+$("scene").addEventListener("pointermove", e => {
+  const p = ptr(e);
+  if (!drag) { $("scene").style.cursor = onScale(p) ? "grab" : "default"; return; }
+  $("scene").style.cursor = "grabbing";
+  yb = Math.max(YB_MIN, Math.min(YB_MAX, drag.yb - (p.y - drag.y) / geo.s));
+  dragged = true; settle(); drawScene();
+  if (performance.now() - lastFlow < 350) scheduleFlow();
+});
+const endDrag = () => { drag = null; $("scene").style.cursor = "default"; };
+$("scene").addEventListener("pointerup", endDrag);
+$("scene").addEventListener("pointercancel", endDrag);
+// วาดซ้ำจนสายของเหลวที่ล้นหายไป
+let flowTimer = 0;
+function scheduleFlow() { clearTimeout(flowTimer); flowTimer = setTimeout(drawScene, 380); }
+
+function draw() { updateFS(); drawScene(); }
+refill(); updateControls(); buildTable(); draw();
+let rzPending = 0;
+const drawLater = () => { if (!rzPending) rzPending = requestAnimationFrame(() => { rzPending = 0; draw(); }); };
+if (window.ResizeObserver) new ResizeObserver(drawLater).observe(document.body);
+window.addEventListener("resize", draw);
+window.addEventListener("orientationchange", () => setTimeout(draw, 300));
+if (window.matchMedia) {
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  if (mq.addEventListener) mq.addEventListener("change", draw);
+}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+setTimeout(draw, 500);
+document.getElementById("jsWarn").style.display = "none";
+</script>
+</body>
+</html>
