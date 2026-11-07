@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ความดันในของเหลว</title>
+<!--
+  Simulation เกี่ยวกับความดันในของเหลว
+  ฟิสิกส์ 2 (ว31112) แผนที่ 02 สไลด์ "ชวนคิด: ความดันในของเหลวขึ้นกับอะไร" ใช้แทนกิจกรรม 17.5 ที่ไม่ได้ทำจริง
+  อุปกรณ์ตามรูปในกิจกรรม 17.5 หนังสือเรียน ฟิสิกส์ เล่ม 5 สสวท. หน้า 218–219
+    แมนอมิเตอร์รูปตัวยูบรรจุน้ำ ต่อสายยางกับหลอดแก้ววัดความดันที่จุ่มในกระบอกตวง
+  ความหนาแน่นของน้ำ น้ำเกลือ กลีเซอรอล: ตารางตัวอย่างผลกิจกรรม ตอนที่ 2 คู่มือครู ฟิสิกส์ เล่ม 5 หน้า 253
+  ค่าที่แสดงเป็นค่าตามทฤษฎี g = 9.8 m/s^2 ไม่มีความคลาดเคลื่อนสุ่ม
+  ไม่แสดงสมการบนจอ เพราะนักเรียนหาความสัมพันธ์เองหลังใช้ Simulation (ข้อตกลงกับผู้สอน 7 พ.ย. 2569)
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #4A2033; --secondary: #1E6670; --accent: #E2772E; --alert: #AD3426;
+  --ink: #2B2427; --muted: #7a6d72; --paper: #FCF8F3; --card: #ffffff; --line: #e6dcd3;
+  --glass-edge: #8aa3ad; --board: #c9c4bf; --hose: #8a5a2b; --mano: rgba(90,160,220,0.75);
+  --c1: #1E6670; --c2: #E2772E; --c3: #7B3FA0; --c4: #2E8B3E; --c5: #AD3426; --c6: #1F5FA8; --c7: #9a7b12;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #f0c6d6; --secondary: #6cc3cc; --accent: #f29a5c; --alert: #ef7b6c;
+    --ink: #f1e9e4; --muted: #b3a6ab; --paper: #1d1719; --card: #2a2225; --line: #43383c;
+    --glass-edge: #7d949c; --board: #4a4245; --hose: #b98552; --mano: rgba(110,175,235,0.70);
+    --c1: #5cc3cc; --c2: #f29a5c; --c3: #c79be0; --c4: #7ccf88; --c5: #ef7b6c; --c6: #7fb0ef; --c7: #e0c35a;
+  }
+}
+:root[data-theme="dark"] {
+  --primary: #f0c6d6; --secondary: #6cc3cc; --accent: #f29a5c; --alert: #ef7b6c;
+  --ink: #f1e9e4; --muted: #b3a6ab; --paper: #1d1719; --card: #2a2225; --line: #43383c;
+  --glass-edge: #7d949c; --board: #4a4245; --hose: #b98552; --mano: rgba(110,175,235,0.70);
+  --c1: #5cc3cc; --c2: #f29a5c; --c3: #c79be0; --c4: #7ccf88; --c5: #ef7b6c; --c6: #7fb0ef; --c7: #e0c35a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: "THSarabunLocal", "Sarabun", sans-serif; font-size: 21px; line-height: 1.35;
+}
+header { padding: 10px 20px 6px; border-bottom: 3px solid var(--accent); display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+header h1 { margin: 0; font-size: 34px; color: var(--primary); }
+header span { color: var(--muted); font-size: 19px; }
+main { display: grid; grid-template-columns: 290px minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; padding: 14px 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.card h2 { margin: 0 0 6px; font-size: 23px; color: var(--secondary); }
+.card h2.sub { margin-top: 14px; }
+label { display: block; margin-top: 8px; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.val { font-weight: 700; color: var(--primary); }
+input[type=range] { width: 100%; accent-color: var(--accent); height: 30px; }
+.presets { display: flex; gap: 5px; }
+button { font: inherit; font-size: 21px; font-weight: 700; padding: 6px 8px; border-radius: 8px; border: none; cursor: pointer; }
+.presets button { flex: 1 1 auto; font-size: 18px; padding: 4px 5px; background: var(--line); color: var(--ink); white-space: nowrap; }
+.readout { text-align: center; white-space: nowrap; }
+.presets button.on { background: var(--secondary); color: #fff; }
+#liqName { font-weight: 700; color: var(--secondary); }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+#rec { background: var(--accent); color: #fff; }
+#clr { background: var(--line); color: var(--ink); }
+#status { font-size: 17px; color: var(--muted); min-height: 1.35em; margin-top: 4px; }
+.note { font-size: 17px; color: var(--muted); margin-top: 10px; }
+#sceneWrap { position: relative; min-height: 560px; padding: 0; overflow: hidden; }
+#scene { display: block; width: 100%; height: 100%; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.right { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.tabs { display: flex; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
+.tabs button { font-size: 19px; padding: 2px 10px; background: var(--line); color: var(--ink); }
+.tabs button.on { background: var(--secondary); color: #fff; }
+#graph { width: 100%; height: 280px; display: block; }
+#warn { display: none; margin-top: 4px; padding: 2px 8px; border-radius: 6px; background: var(--alert); color: #fff; font-size: 17px; }
+table { width: 100%; border-collapse: collapse; font-size: 19px; }
+th, td { border-bottom: 1px solid var(--line); padding: 2px 6px; text-align: center; }
+th { color: var(--secondary); }
+td.bad { color: var(--alert); font-weight: 700; }
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.empty { color: var(--muted); font-size: 18px; text-align: center; padding: 8px; }
+.tblwrap { max-height: 260px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+/* แท็บเล็ต/จอสัมผัส: กันการซูมเมื่อแตะสองครั้ง */
+button, input, label { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#jsWarn { margin: 10px 16px 0; padding: 8px 14px; border-radius: 8px; background: var(--alert); color: #fff; font-size: 20px; }
+#jsErr { font-size: 15px; margin-top: 4px; word-break: break-all; }
+@media (min-width: 1001px) {
+  body { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: auto; }
+  main { flex: 1; min-height: 0; }
+  main > section { min-height: 0; overflow: auto; }
+  #sceneWrap { min-height: 460px; overflow: hidden; }
+  .right > .card:last-child { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .right .tblwrap { max-height: none; flex: 1; min-height: 0; }
+}
+@media (min-width: 1001px) and (max-width: 1279px) {
+  main { grid-template-columns: 240px minmax(0, 1.2fr) minmax(0, 1fr); gap: 10px; padding: 10px; }
+  body { font-size: 19px; }
+}
+/* จอแนวนอน 16:9 และ 4:3 (โปรเจกเตอร์ ทีวี): แสดงทั้งหมดในหน้าจอเดียว ตัวอักษรขยายตามความสูงจอ */
+@media (min-width: 1000px) and (min-aspect-ratio: 5/4) and (min-height: 600px) {
+  body { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; font-size: clamp(15px, 2.3vh, 28px); }
+  header { padding: 0.25em 0.8em 0.15em; gap: 0.6em; }
+  header h1 { font-size: 1.4em; }
+  header span { font-size: 0.85em; }
+  main { flex: 1 1 auto; min-height: 0; grid-template-columns: 13.5em minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+         gap: 0.5em; padding: 0.5em 0.6em; }
+  main > section { min-height: 0; overflow: hidden; }
+  .card { padding: 0.35em 0.6em; }
+  .card h2 { font-size: 1.08em; margin-bottom: 0.15em; }
+  .card h2.sub { margin-top: 0.5em; }
+  label { margin-top: 0.25em; }
+  button { font-size: 0.95em; padding: 0.2em 0.4em; }
+  .presets button { font-size: 0.8em; }
+  input[type=range] { height: 1.3em; }
+  #status, .note { font-size: 0.72em; }
+  #sceneWrap { min-height: 0; }
+  .right { gap: 0.5em; min-height: 0; }
+  .right > .card:first-child { flex: 1.3 1 0; min-height: 0; display: flex; flex-direction: column; }
+  .tabs button { font-size: 0.85em; padding: 0.05em 0.5em; }
+  #graph { flex: 1 1 0; min-height: 0; height: 0; }
+  #warn { font-size: 0.75em; }
+  .right > .card:last-child { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+  .right .tblwrap { max-height: none; flex: 1 1 0; min-height: 0; }
+  .right > .card:last-child h2 { font-size: 0.95em; }
+  table { font-size: 0.85em; }
+  th, td { padding: 0 0.3em; }
+}
+@media (max-width: 1000px) {
+  main { grid-template-columns: 1fr; padding: 12px 16px; }
+  #sceneWrap { min-height: 500px; }
+}
+/* iPad แนวตั้ง: ตั้งค่าคู่กับฉาก กราฟและตารางอยู่แถวล่าง */
+@media (min-width: 700px) and (max-width: 1000px) {
+  main { grid-template-columns: 250px minmax(0, 1fr); gap: 12px; }
+  #sceneWrap { min-height: 0; height: max(500px, min(700px, calc(100vh - 120px))); align-self: start; }
+  .right { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  body { font-size: 19px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>ความดันในของเหลว</h1>
+  <span>ฟิสิกส์ 2 (ว31112) · ของไหลสถิต · วัดความดันในของเหลวด้วยแมนอมิเตอร์</span>
+</header>
+<!-- ข้อความนี้ถูกซ่อนเมื่อโปรแกรมเริ่มทำงานสำเร็จ ถ้ายังเห็นอยู่ แสดงว่าโปรแกรมไม่ทำงาน -->
+<div id="jsWarn">
+  <b>Simulation ยังไม่ทำงาน</b> <span id="jsMsg">เบราว์เซอร์นี้ไม่รันโปรแกรม ให้เปิดลิงก์ด้วย Safari หรือ Chrome หรือดูจากจอที่ครูฉาย</span>
+  <div id="jsErr"></div>
+</div>
+<script>
+// แสดงข้อผิดพลาดบนหน้าจอ เพื่อให้แจ้งผู้สอนได้ (ไม่มีหน้าต่าง console บน iPad)
+window.onerror = function (msg, src, line, col) {
+  var w = document.getElementById("jsWarn"), e = document.getElementById("jsErr");
+  if (!w || !e) return;
+  // คำเตือนของเบราว์เซอร์เรื่อง ResizeObserver ไม่ใช่ข้อผิดพลาดของโปรแกรม
+  if (String(msg).indexOf("ResizeObserver loop") >= 0) return true;
+  w.style.display = "block";
+  w.firstElementChild.textContent = "Simulation ทำงานผิดพลาด";
+  document.getElementById("jsMsg").textContent = "กรุณาถ่ายภาพหน้าจอนี้ส่งครู";
+  e.textContent = "ข้อผิดพลาด: " + msg + " (บรรทัด " + line + ":" + col + ") · " + navigator.userAgent;
+};
+</script>
+<main>
+  <section class="card" aria-label="ตั้งค่า">
+    <h2>ของเหลวในกระบอกตวง</h2>
+    <div class="presets" id="presets"></div>
+    <label>ความหนาแน่นของของเหลว
+      <input type="range" id="rho" min="700" max="1500" step="10" value="1000" aria-label="ความหนาแน่นของของเหลว">
+      <div class="readout"><span id="liqName"></span> <span class="val" id="rhoOut"></span></div></label>
+
+    <h2 class="sub">บันทึกผล</h2>
+    <div class="btns">
+      <button id="rec">บันทึกค่า</button>
+      <button id="clr">ล้างกราฟ</button>
+    </div>
+    <div id="status"></div>
+
+    <p class="note">ลากหลอดวัดความดันในกระบอกตวงขึ้นลงเพื่อเปลี่ยนความลึก (แตะในกระบอกตวงเพื่อย้ายหลอดวัดไปที่ระดับนั้นได้)</p>
+    <p class="note">แมนอมิเตอร์บรรจุน้ำ · ความหนาแน่นของน้ำ น้ำเกลือ และกลีเซอรอลตามคู่มือครู ฟิสิกส์ เล่ม 5 หน้า 253 · g = 9.8 m/s²</p>
+  </section>
+
+  <section class="card" id="sceneWrap" aria-label="แมนอมิเตอร์และกระบอกตวง"><canvas id="scene"></canvas></section>
+
+  <section class="right">
+    <div class="card">
+      <div class="tabs">
+        <button id="tabH" class="on">ความดัน–ความลึก</button>
+        <button id="tabR">ความดัน–ความหนาแน่น</button>
+      </div>
+      <canvas id="graph"></canvas>
+      <div id="warn"></div>
+    </div>
+    <div class="card">
+      <h2 id="tblTitle"></h2>
+      <div class="tblwrap"><table id="tbl"></table></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const G = 9.8, RHO_MANO = 1000;            // แมนอมิเตอร์บรรจุน้ำ
+const H_MAX = 0.20;                         // ความลึกสูงสุดที่ลากหลอดวัดได้ (m)
+const PRESETS = [                           // คู่มือครู ฟิสิกส์ เล่ม 5 หน้า 253
+  { name: "น้ำ", rho: 1000 },
+  { name: "น้ำเกลือ", rho: 1100 },
+  { name: "กลีเซอรอล", rho: 1200 },
+];
+const $ = id => document.getElementById(id);
+
+let rho = 1000, h = 0.05, view = "h", dragged = false;
+const data = { h: [], r: [] };              // จุดที่บันทึกของแต่ละแท็บ
+
+// ---------- ค่าที่อ่านได้ (ใช้ค่าที่ปัดแล้วชุดเดียวกันทั้งจอ ตาราง และกราฟ) ----------
+function reading() {
+  const hR = Math.round(h * 1000) / 1000;
+  return { h: hR, rho, P: Math.round(rho * G * hR) };
+}
+function liqName(r) { const p = PRESETS.find(p => p.rho === r); return p ? p.name : "กำหนดเอง"; }
+const fmtRho = r => (r / 1000).toFixed(2);
+const fmtH = x => x.toFixed(3);
+
+// สีของเส้นกราฟตามความหนาแน่น: ของเหลวในหนังสือมีสีประจำ ค่าที่กำหนดเองใช้สีถัดไป
+const colorMap = new Map([[1000, "--c1"], [1100, "--c2"], [1200, "--c3"]]);
+const EXTRA = ["--c4", "--c5", "--c6", "--c7"];
+let extraIdx = 0;
+function colorVar(r) {
+  if (!colorMap.has(r)) colorMap.set(r, EXTRA[extraIdx++ % EXTRA.length]);
+  return colorMap.get(r);
+}
+// สีของเหลวในกระบอกตวง: เข้มขึ้นเมื่อความหนาแน่นมากขึ้น
+function liquidColor(r) {
+  const t = Math.max(0, Math.min(1, (r - 700) / 800));
+  return `hsla(${205 - 20 * t}, ${50 + 25 * t}%, ${76 - 34 * t}%, ${0.45 + 0.4 * t})`;
+}
+
+// ---------- ส่วนควบคุม ----------
+PRESETS.forEach(p => {
+  const b = document.createElement("button");
+  b.textContent = p.name; b.dataset.rho = p.rho;
+  b.onclick = () => { setRho(p.rho); };
+  $("presets").appendChild(b);
+});
+function setRho(r) { rho = r; $("rho").value = r; updateControls(); drawScene(); }
+function updateControls() {
+  $("liqName").textContent = liqName(rho);
+  $("rhoOut").textContent = `${fmtRho(rho)} × 10³ kg/m³`;
+  document.querySelectorAll("#presets button").forEach(b => b.classList.toggle("on", +b.dataset.rho === rho));
+}
+$("rho").addEventListener("input", () => { rho = +$("rho").value; updateControls(); drawScene(); });
+
+$("rec").onclick = () => {
+  const R = reading(), set = data[view];
+  if (set.some(p => p.h === R.h && p.rho === R.rho)) {
+    $("status").textContent = "บันทึกค่านี้ไว้แล้ว";
+  } else {
+    set.push(R);
+    if (view === "h") colorVar(R.rho);
+    $("status").textContent = `บันทึกแล้ว: ρ = ${fmtRho(R.rho)} × 10³ kg/m³ · h = ${fmtH(R.h)} m · P = ${R.P} N/m²`;
+  }
+  drawGraph(); buildTable();
+};
+$("clr").onclick = () => { data[view] = []; $("status").textContent = ""; drawGraph(); buildTable(); };
+function setView(v) {
+  view = v;
+  $("tabH").classList.toggle("on", v === "h"); $("tabR").classList.toggle("on", v === "r");
+  $("status").textContent = "";
+  drawGraph(); buildTable();
+}
+$("tabH").onclick = () => setView("h");
+$("tabR").onclick = () => setView("r");
+
+// ---------- การวาด ----------
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function fitCanvas(c) {
+  const dpr = window.devicePixelRatio || 1, rect = c.getBoundingClientRect();
+  const w = Math.max(1, Math.round(rect.width)), hh = Math.max(1, Math.round(rect.height));
+  if (c.width !== w * dpr || c.height !== hh * dpr) { c.width = w * dpr; c.height = hh * dpr; }
+  const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h: hh };
+}
+const FONT = '"THSarabunLocal", "Sarabun", sans-serif';
+const LANDSCAPE = window.matchMedia("(min-width: 1000px) and (min-aspect-ratio: 5/4) and (min-height: 600px)");
+let FS = 1;
+function updateFS() { FS = LANDSCAPE.matches ? Math.max(0.95, Math.min(1.45, window.innerHeight / 760)) : 1; }
+const font = (size, weight = 400) => `${weight} ${Math.round(size * FS)}px ${FONT}`;
+
+function fitText(ctx, s, x, y, maxW, size, weight = 400, align = "center") {
+  let fs = Math.round(size * FS);
+  do { ctx.font = `${weight} ${fs}px ${FONT}`; } while (ctx.measureText(s).width > maxW && --fs > 11);
+  ctx.textAlign = align; ctx.fillText(s, x, y);
+}
+// ลูกศรสองหัวในแนวดิ่ง
+function dimArrow(ctx, x, y0, y1, col) {
+  ctx.strokeStyle = ctx.fillStyle = col; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+  if (Math.abs(y1 - y0) < 12) return;
+  [[y0, 1], [y1, -1]].forEach(([y, d]) => {
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 4, y + d * 8); ctx.lineTo(x + 4, y + d * 8); ctx.closePath(); ctx.fill();
+  });
+}
+function roundRect(ctx, x, y, w, hh, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + hh, r); ctx.arcTo(x + w, y + hh, x, y + hh, r);
+  ctx.arcTo(x, y + hh, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+let geo = null;   // ตำแหน่งของกระบอกตวงและหลอดวัด ใช้ตรวจการลาก
+
+function drawScene() {
+  const { ctx, w, h: H } = fitCanvas($("scene"));
+  ctx.clearRect(0, 0, w, H);
+  const R = reading();
+  const ink = css("--ink"), muted = css("--muted"), glass = css("--glass-edge"), card = css("--card");
+
+  // มาตราส่วนแนวดิ่ง: ส่วนบนสำหรับค่าที่อ่านได้ ส่วนล่างสำหรับชื่อ
+  const band = 78 * FS, foot = 62 * FS;
+  const s = Math.min((H - band - foot - 10) / 0.52, 1600);      // px ต่อเมตร
+  const ySurf = band + 0.30 * s;                                // ผิวของเหลวในกระบอกตวง
+  const yBot = ySurf + 0.22 * s;                                // ก้นกระบอกตวง
+
+  // ----- กระบอกตวง -----
+  const cx = w * 0.70, cw = Math.max(70, Math.min(130, w * 0.22));
+  const x0 = cx - cw / 2, x1 = cx + cw / 2, yGlassTop = ySurf - 0.03 * s;
+  ctx.fillStyle = liquidColor(rho); ctx.fillRect(x0, ySurf, cw, yBot - ySurf);
+  ctx.strokeStyle = liquidColor(Math.min(1500, rho + 300)); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x0, ySurf); ctx.lineTo(x1, ySurf); ctx.stroke();
+  ctx.strokeStyle = glass; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(x0, yGlassTop); ctx.lineTo(x0, yBot); ctx.lineTo(x1, yBot); ctx.lineTo(x1, yGlassTop); ctx.stroke();
+  ctx.fillStyle = ink; ctx.globalAlpha = 0.75; ctx.fillRect(x0 - 16, yBot, cw + 32, 7); ctx.globalAlpha = 1;
+
+  // สเกลความลึกด้านซ้ายของกระบอกตวง (วัดจากผิวของเหลว)
+  ctx.strokeStyle = muted; ctx.fillStyle = muted; ctx.lineWidth = 1;
+  ctx.font = font(15); ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let k = 0; k <= 44; k++) {
+    const yy = ySurf + k * 0.005 * s, len = k % 10 === 0 ? 12 : k % 2 === 0 ? 8 : 4;
+    ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(x0 + len, yy); ctx.stroke();
+    if (k % 10 === 0) ctx.fillText((k * 0.005).toFixed(2), x0 - 5, yy);
+  }
+  ctx.textBaseline = "alphabetic"; ctx.fillText("ความลึก (m)", x0 - 5, ySurf - 0.045 * s);
+
+  // ----- หลอดวัดความดัน -----
+  const yIf = ySurf + R.h * s;                     // ผิวของเหลวภายในหลอดวัด
+  const pw = 14, px0 = cx - pw / 2;
+  const yMouth = yIf + Math.max(6, 0.012 * s), yPTop = yIf - 0.25 * s;
+  const yWet = Math.max(ySurf, yPTop);
+  ctx.fillStyle = card; ctx.fillRect(px0, yWet, pw, yIf - yWet);            // อากาศภายในหลอด
+  ctx.fillStyle = liquidColor(rho); ctx.fillRect(px0, yIf, pw, yMouth - yIf);
+  ctx.strokeStyle = glass; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(px0, yPTop); ctx.lineTo(px0, yMouth); ctx.moveTo(px0 + pw, yPTop); ctx.lineTo(px0 + pw, yMouth); ctx.stroke();
+
+  // ----- แมนอมิเตอร์ -----
+  const mx = w * 0.27, d = Math.max(34, Math.min(60, w * 0.09)), tw = 12;
+  const xL = mx - d / 2, xR = mx + d / 2;
+  const yBend = yBot - 0.03 * s - d / 2, yZero = yBend - 0.15 * s, yArmTop = yZero - 0.17 * s;
+  const dLev = R.P / (RHO_MANO * G);               // ผลต่างระดับน้ำในแมนอมิเตอร์ (m)
+  const yLevL = yZero - dLev / 2 * s, yLevR = yZero + dLev / 2 * s;
+  // แผ่นรอง
+  ctx.fillStyle = css("--board");
+  ctx.fillRect(xL - 46, yArmTop - 8, d + 70, yBend + d / 2 + 14 - (yArmTop - 8));
+  ctx.fillRect(xL - 60, yBot, d + 98, 7);
+  // หลอดแก้วรูปตัวยู
+  const uPath = (yA, yB) => { ctx.beginPath(); ctx.moveTo(xL, yA); ctx.lineTo(xL, yBend); ctx.arc(mx, yBend, d / 2, Math.PI, 0, true); ctx.lineTo(xR, yB); };
+  uPath(yArmTop, yArmTop); ctx.lineCap = "butt";
+  ctx.strokeStyle = glass; ctx.lineWidth = tw + 4; ctx.stroke();
+  ctx.strokeStyle = card; ctx.lineWidth = tw; ctx.stroke();
+  uPath(yLevL, yLevR); ctx.strokeStyle = css("--mano"); ctx.lineWidth = tw; ctx.stroke();
+  // สเกลของแมนอมิเตอร์ (cm) ด้านซ้ายของขาซ้าย
+  ctx.strokeStyle = ink; ctx.fillStyle = ink; ctx.lineWidth = 1; ctx.font = font(14);
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let c = -15; c <= 15; c++) {
+    const yy = yZero - c * 0.01 * s, len = c % 5 === 0 ? 10 : 5;
+    ctx.beginPath(); ctx.moveTo(xL - tw / 2 - 4, yy); ctx.lineTo(xL - tw / 2 - 4 - len, yy); ctx.stroke();
+    if (c % 5 === 0) ctx.fillText(Math.abs(c), xL - tw / 2 - 18, yy);
+  }
+  ctx.textBaseline = "alphabetic"; ctx.fillText("cm", xL - tw / 2 - 18, yZero - 0.16 * s);
+  // ระดับน้ำสองข้าง
+  if (dLev * s > 3) {
+    ctx.setLineDash([4, 3]); ctx.strokeStyle = css("--alert"); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(xL - tw / 2, yLevL); ctx.lineTo(xR + tw / 2 + 8, yLevL);
+    ctx.moveTo(xR - tw / 2, yLevR); ctx.lineTo(xR + tw / 2 + 8, yLevR); ctx.stroke(); ctx.setLineDash([]);
+    dimArrow(ctx, xR + tw / 2 + 5, yLevL, yLevR, css("--alert"));
+  }
+
+  // ----- สายยาง -----
+  ctx.strokeStyle = css("--hose"); ctx.lineWidth = 9; ctx.lineCap = "round";
+  const yc = Math.min(yArmTop, yPTop) - 0.05 * s;
+  ctx.beginPath(); ctx.moveTo(xR, yArmTop + 4); ctx.bezierCurveTo(xR, yc, cx, yc, cx, yPTop + 4); ctx.stroke();
+  ctx.lineCap = "butt";
+
+  // ----- เส้นบอกระยะ h ด้านขวาของกระบอกตวง -----
+  const xb = x1 + 16, acc = css("--accent");
+  ctx.setLineDash([5, 4]); ctx.strokeStyle = acc; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(cx + pw / 2 + 2, yIf); ctx.lineTo(xb + 8, yIf); ctx.moveTo(x1 - 4, ySurf); ctx.lineTo(xb + 8, ySurf); ctx.stroke();
+  ctx.setLineDash([]);
+  dimArrow(ctx, xb, ySurf, yIf, acc);
+  ctx.fillStyle = acc; ctx.font = `italic 700 ${Math.round(24 * FS)}px ${FONT}`; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.fillText("h", xb + 8, (ySurf + yIf) / 2);
+
+  // คำแนะนำการลาก (ซ่อนเมื่อเริ่มลากแล้ว)
+  if (!dragged) {
+    ctx.fillStyle = acc; ctx.font = font(19, 700); ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.fillText("⇅ ลากหลอดวัด", cx + 0.6 * cw, yPTop + 0.06 * s);
+  }
+
+  // ----- ค่าที่อ่านได้ (ส่วนบน) -----
+  const box = (bx, title, value, col) => {
+    const bw = Math.min(w * 0.44, 260 * FS), bh = band - 14;
+    roundRect(ctx, bx - bw / 2, 6, bw, bh, 8); ctx.fillStyle = card; ctx.fill();
+    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = muted; ctx.textBaseline = "alphabetic"; fitText(ctx, title, bx, 6 + bh * 0.38, bw - 10, 17);
+    ctx.fillStyle = col; fitText(ctx, value, bx, 6 + bh * 0.86, bw - 10, 30, 700);
+  };
+  box(w * 0.26, "ความดันเกจที่วัดได้", `${R.P} N/m²`, css("--primary"));
+  box(w * 0.74, "ความลึก", `h = ${fmtH(R.h)} m`, acc);
+
+  // ----- ชื่อใต้ภาพ -----
+  ctx.textBaseline = "alphabetic"; ctx.fillStyle = ink;
+  fitText(ctx, "แมนอมิเตอร์ (บรรจุน้ำ)", mx, yBot + 30 * FS, w * 0.46, 19, 700);
+  ctx.fillStyle = css("--alert");
+  fitText(ctx, `ระดับน้ำสองข้างต่างกัน ${(dLev * 100).toFixed(1)} cm`, mx, yBot + 52 * FS, w * 0.46, 17);
+  ctx.fillStyle = ink;
+  fitText(ctx, liqName(rho), cx, yBot + 30 * FS, w * 0.5, 19, 700);
+  ctx.fillStyle = muted;
+  fitText(ctx, `ρ = ${fmtRho(rho)} × 10³ kg/m³`, cx, yBot + 52 * FS, w * 0.5, 17);
+
+  geo = { s, ySurf, yBot, x0, x1, cx, pw, yIf, yPTop, yGlassTop };
+}
+
+// ---------- การลากหลอดวัด ----------
+let drag = null;
+function ptr(e) { const r = $("scene").getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+function onProbe(p) { return geo && Math.abs(p.x - geo.cx) < 30 && p.y > geo.yPTop - 14 && p.y < geo.yIf + 24; }
+function inCylinder(p) { return geo && p.x > geo.x0 - 10 && p.x < geo.x1 + 10 && p.y > geo.yGlassTop - 10 && p.y < geo.yBot + 10; }
+$("scene").addEventListener("pointerdown", e => {
+  const p = ptr(e);
+  if (onProbe(p)) drag = { off: p.y - geo.yIf };
+  else if (inCylinder(p)) drag = { off: 0 };
+  else return;
+  $("scene").setPointerCapture(e.pointerId); e.preventDefault();
+  moveTo(p.y);
+});
+$("scene").addEventListener("pointermove", e => {
+  const p = ptr(e);
+  if (!drag) { $("scene").style.cursor = onProbe(p) ? "grab" : inCylinder(p) ? "pointer" : "default"; return; }
+  $("scene").style.cursor = "grabbing";
+  moveTo(p.y);
+});
+const endDrag = () => { drag = null; $("scene").style.cursor = "default"; };
+$("scene").addEventListener("pointerup", endDrag);
+$("scene").addEventListener("pointercancel", endDrag);
+function moveTo(y) {
+  h = Math.max(0, Math.min(H_MAX, (y - drag.off - geo.ySurf) / geo.s));
+  dragged = true; drawScene();
+}
+
+// ---------- กราฟ ----------
+function niceMax(x) {
+  if (x <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(x))), f = x / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+}
+function hMismatch() { const r = data.r; return r.length ? r.filter(p => p.h !== r[0].h) : []; }
+function drawGraph() {
+  const { ctx, w, h: H } = fitCanvas($("graph"));
+  ctx.clearRect(0, 0, w, H);
+  const isH = view === "h", pts = data[view];
+  const xMax = isH ? H_MAX : 1600;
+  const yMax = niceMax(Math.max(1000, ...pts.map(p => p.P * 1.05)));
+  const L = 72 * FS, Rm = 14, Tp = 14, Bt = 46 * FS, pw = w - L - Rm, ph = H - Tp - Bt;
+  const X = x => L + x / xMax * pw, Y = y => Tp + ph - y / yMax * ph;
+  const muted = css("--muted"), line = css("--line"), ink = css("--ink");
+  ctx.font = font(16); ctx.fillStyle = muted; ctx.strokeStyle = line; ctx.lineWidth = 1;
+  const nx = 4;
+  for (let k = 0; k <= 5; k++) {
+    const yv = yMax * k / 5, yy = Y(yv);
+    ctx.beginPath(); ctx.moveTo(L, yy); ctx.lineTo(L + pw, yy); ctx.stroke();
+    ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillText(Math.round(yv), L - 6, yy);
+  }
+  for (let k = 0; k <= nx; k++) {
+    const xv = xMax * k / nx, xx = X(xv);
+    ctx.beginPath(); ctx.moveTo(xx, Tp); ctx.lineTo(xx, Tp + ph); ctx.stroke();
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText(isH ? xv.toFixed(2) : (xv / 1000).toFixed(1), xx, Tp + ph + 4);
+  }
+  ctx.strokeStyle = ink; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(L, Tp); ctx.lineTo(L, Tp + ph); ctx.lineTo(L + pw, Tp + ph); ctx.stroke();
+  ctx.fillStyle = ink; ctx.font = font(18, 700);
+  ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+  ctx.fillText(isH ? "ความลึก h (m)" : "ความหนาแน่น ρ (× 10³ kg/m³)", L + pw / 2, H - 2);
+  ctx.save(); ctx.translate(12 * FS, Tp + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = "middle";
+  ctx.fillText("ความดันเกจ P (N/m²)", 0, 0); ctx.restore();
+
+  if (!pts.length) {
+    ctx.fillStyle = muted; ctx.textBaseline = "middle";
+    const msg = isH ? ["ลากหลอดวัดไปที่ความลึกต่าง ๆ", "แล้วกด “บันทึกค่า”"] : ["ตั้งความลึกคงที่ เปลี่ยนของเหลว", "แล้วกด “บันทึกค่า”"];
+    msg.forEach((m, k) => fitText(ctx, m, L + pw / 2, Tp + ph / 2 + (k - 0.5) * 24 * FS, pw - 16, 18));
+  }
+  // จัดกลุ่มเป็นเส้น: แท็บ P–h แยกตามความหนาแน่น · แท็บ P–ρ เป็นเส้นเดียว
+  const groups = new Map();
+  const h0 = data.r.length ? data.r[0].h : null;
+  // แท็บ P–ρ: จุดที่ความลึกไม่เท่าจุดแรกแสดงเป็นวงกลมกลวงสีแดง ไม่ต่อเส้น
+  if (!isH) pts.filter(p => p.h !== h0).forEach(p => {
+    ctx.strokeStyle = css("--alert"); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(X(p.rho), Y(p.P), 5, 0, 7); ctx.stroke();
+  });
+  pts.forEach(p => {
+    if (!isH && p.h !== h0) return;
+    const key = isH ? p.rho : 0;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  });
+  groups.forEach((g, key) => {
+    const col = isH ? css(colorVar(key)) : css("--c1");
+    const xs = p => isH ? p.h : p.rho;
+    g.sort((a, b) => xs(a) - xs(b));
+    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.globalAlpha = 0.6;
+    ctx.beginPath(); g.forEach((p, k) => k ? ctx.lineTo(X(xs(p)), Y(p.P)) : ctx.moveTo(X(xs(p)), Y(p.P))); ctx.stroke();
+    ctx.globalAlpha = 1;
+    g.forEach(p => { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X(xs(p)), Y(p.P), 5, 0, 7); ctx.fill(); });
+  });
+  // คำอธิบายสีของแท็บ P–h
+  if (isH && groups.size) {
+    ctx.font = font(16, 700); ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    let yy = Tp + 10;
+    [...groups.keys()].sort((a, b) => a - b).forEach(r => {
+      ctx.fillStyle = css(colorVar(r));
+      ctx.beginPath(); ctx.arc(L + 14, yy, 5, 0, 7); ctx.fill();
+      ctx.fillText(`${liqName(r)} ρ = ${fmtRho(r)}`, L + 24, yy); yy += 20 * FS;
+    });
+  }
+  const bad = !isH && hMismatch().length;
+  $("warn").style.display = bad ? "block" : "none";
+  if (bad) $("warn").textContent = `ความลึกไม่เท่ากับจุดก่อนหน้า (จุดแรกบันทึกที่ h = ${fmtH(data.r[0].h)} m)`;
+}
+
+function buildTable() {
+  const isH = view === "h", pts = [...data[view]];
+  $("tblTitle").textContent = isH ? "ความดันที่ความลึกต่าง ๆ" : "ความดันในของเหลวต่างชนิด";
+  if (!pts.length) { $("tbl").innerHTML = `<tr><td class="empty" colspan="4">ยังไม่มีค่าที่บันทึก</td></tr>`; return; }
+  pts.sort((a, b) => isH ? (a.rho - b.rho || a.h - b.h) : (a.rho - b.rho));
+  const h0 = data.r.length ? data.r[0].h : null;
+  let html = "<tr><th>ของเหลว</th><th>ρ (× 10³ kg/m³)</th><th>h (m)</th><th>P (N/m²)</th></tr>";
+  pts.forEach(p => {
+    const dot = isH ? `<span class="dot" style="background:var(${colorVar(p.rho)})"></span>` : "";
+    const bad = !isH && p.h !== h0 ? ' class="bad"' : "";
+    html += `<tr><td>${dot}${liqName(p.rho)}</td><td>${fmtRho(p.rho)}</td><td${bad}>${fmtH(p.h)}</td><td>${p.P}</td></tr>`;
+  });
+  $("tbl").innerHTML = html;
+}
+
+function draw() { updateFS(); drawScene(); drawGraph(); }
+updateControls(); buildTable(); draw();
+// วาดใหม่เมื่อขนาดจอหรือธีมเปลี่ยน (Safari รุ่นเก่าไม่มี ResizeObserver)
+let rzPending = 0;
+const drawLater = () => { if (!rzPending) rzPending = requestAnimationFrame(() => { rzPending = 0; draw(); }); };
+if (window.ResizeObserver) new ResizeObserver(drawLater).observe(document.body);
+window.addEventListener("resize", draw);
+window.addEventListener("orientationchange", () => setTimeout(draw, 300));
+if (window.matchMedia) {
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  if (mq.addEventListener) mq.addEventListener("change", draw);
+}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+setTimeout(draw, 500);
+document.getElementById("jsWarn").style.display = "none";
+</script>
+</body>
+</html>
