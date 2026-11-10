@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>การไหลของของไหลในท่อ</title>
+<!--
+  Simulation เกี่ยวกับการไหลของของไหลในท่อ (slug: flow-in-pipe)
+  ฟิสิกส์ 2 (ว31112) แผนที่ 03 ใช้ 2 ครั้ง
+    คาบ 1-2 สไลด์ "ชวนคิด: อัตราเร็วในส่วนแคบของท่อ" ปรับพื้นที่หน้าตัดส่วนแคบแล้วสังเกตอัตราเร็ว (สมการความต่อเนื่อง)
+    คาบ 3-4 สไลด์ "ชวนคิด: ตรวจคำคาดคะเนเรื่องความดัน" เปิดหลอดวัดความดัน (หลอดแนวตั้ง) เทียบส่วนกว้างกับส่วนแคบ
+  เนื้อหา: หนังสือเรียน ฟิสิกส์ เล่ม 5 สสวท. หัวข้อ 17.4.1-17.4.3 (หน้า 237-244)
+    สมการความต่อเนื่อง A1v1 = A2v2 · อัตราการไหล R = Av · สมการแบร์นูลลีสำหรับท่อแนวระดับ P + (1/2)ρv^2 = ค่าคงตัว
+  ข้อตกลงกับผู้สอน (10 พ.ย. 2569)
+    ไฟล์เดียวใช้ทั้งสองคาบ การแสดงความดันปิดไว้เป็นค่าเริ่มต้น
+    ท่อแนวระดับ ส่วนกว้าง-ส่วนแคบ-ส่วนกว้าง A1 = 20 cm^2 คงที่ ปรับ A2 (4-20 cm^2) และ R
+    ค่าตัวเลขซ่อนไว้หลังสวิตช์ · แท่งความดันและพลังงานจลน์ต่อปริมาตรปิดไว้เป็นค่าเริ่มต้น
+    ตารางบันทึกผล ไม่มีกราฟ · น้ำเป็นของไหลอุดมคติ ρ = 1.0 × 10^3 kg/m^3 · g = 9.8 m/s^2
+  ความดันเกจที่ส่วนกว้างตั้งไว้คงที่ 3.92 × 10^3 Pa (น้ำในหลอดแนวตั้งสูง 40 cm จากแนวกลางท่อ)
+  ช่วง R 0.20-1.00 × 10^-3 m^3/s ทำให้ v ไม่เกิน 2.5 m/s และระดับน้ำเหนือส่วนแคบไม่ต่ำกว่า 9 cm
+  ภาพท่อไม่ตามมาตราส่วนของหลอดแนวตั้ง ความสูงของน้ำในหลอดอ่านจากสเกลข้างหลอด
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #4A2033; --secondary: #1E6670; --accent: #E2772E; --alert: #AD3426;
+  --ink: #2B2427; --muted: #7a6d72; --paper: #FCF8F3; --card: #ffffff; --line: #e6dcd3;
+  --glass-edge: #6f8c97; --water: rgba(120,180,230,0.45); --dot: #1F5FA8; --dot-hi: #E2772E;
+  --bar-p: #1E6670; --bar-k: #E2772E;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #f0c6d6; --secondary: #6cc3cc; --accent: #f29a5c; --alert: #ef7b6c;
+    --ink: #f1e9e4; --muted: #b3a6ab; --paper: #1d1719; --card: #2a2225; --line: #43383c;
+    --glass-edge: #8fa9b2; --water: rgba(90,150,210,0.40); --dot: #9cc6f5; --dot-hi: #f29a5c;
+    --bar-p: #5cc3cc; --bar-k: #f29a5c;
+  }
+}
+:root[data-theme="dark"] {
+  --primary: #f0c6d6; --secondary: #6cc3cc; --accent: #f29a5c; --alert: #ef7b6c;
+  --ink: #f1e9e4; --muted: #b3a6ab; --paper: #1d1719; --card: #2a2225; --line: #43383c;
+  --glass-edge: #8fa9b2; --water: rgba(90,150,210,0.40); --dot: #9cc6f5; --dot-hi: #f29a5c;
+  --bar-p: #5cc3cc; --bar-k: #f29a5c;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: "THSarabunLocal", "Sarabun", sans-serif; font-size: 21px; line-height: 1.35;
+}
+header { padding: 10px 20px 6px; border-bottom: 3px solid var(--accent); display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+header h1 { margin: 0; font-size: 34px; color: var(--primary); }
+header span { color: var(--muted); font-size: 19px; }
+main { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 14px; padding: 14px 16px; }
+.left { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.card h2 { margin: 0 0 6px; font-size: 23px; color: var(--secondary); }
+.card h2.sub { margin-top: 14px; }
+label { display: block; margin-top: 8px; }
+.val { font-weight: 700; color: var(--primary); }
+.readout { text-align: center; white-space: nowrap; }
+input[type=range] { width: 100%; accent-color: var(--accent); height: 30px; }
+button { font: inherit; font-size: 21px; font-weight: 700; padding: 6px 8px; border-radius: 8px; border: none; cursor: pointer; }
+.toggles { display: flex; flex-direction: column; gap: 6px; }
+.toggles button { text-align: left; font-size: 19px; padding: 4px 10px; background: var(--line); color: var(--ink); }
+.toggles button::before { content: "○ "; }
+.toggles button.on { background: var(--secondary); color: #fff; }
+.toggles button.on::before { content: "● "; }
+.toggles button:disabled { opacity: 0.45; cursor: default; }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+#rec { background: var(--accent); color: #fff; }
+#clr, #play { background: var(--line); color: var(--ink); }
+#play { width: 100%; margin-top: 8px; font-size: 19px; padding: 4px 8px; }
+#status { font-size: 17px; color: var(--muted); min-height: 1.35em; margin-top: 4px; }
+.note { font-size: 17px; color: var(--muted); margin: 8px 0 0; }
+#sceneWrap { position: relative; min-height: 560px; padding: 0; overflow: hidden; }
+#scene { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+table { width: 100%; border-collapse: collapse; font-size: 18px; }
+th, td { border-bottom: 1px solid var(--line); padding: 2px 4px; text-align: center; }
+th { color: var(--secondary); line-height: 1.1; }
+th small { display: block; font-weight: 400; color: var(--muted); font-size: 0.8em; }
+.empty { color: var(--muted); font-size: 18px; text-align: center; padding: 8px; }
+.tblwrap { max-height: 260px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+/* แท็บเล็ต/จอสัมผัส: กันการซูมเมื่อแตะสองครั้ง */
+button, input, label { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#jsWarn { margin: 10px 16px 0; padding: 8px 14px; border-radius: 8px; background: var(--alert); color: #fff; font-size: 20px; }
+#jsErr { font-size: 15px; margin-top: 4px; word-break: break-all; }
+@media (min-width: 1001px) {
+  body { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: auto; }
+  main { flex: 1; min-height: 0; }
+  main > section { min-height: 0; overflow: auto; }
+  #sceneWrap { min-height: 460px; overflow: hidden; }
+  .left > .card:last-child { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .left .tblwrap { max-height: none; flex: 1; min-height: 0; }
+}
+/* จอแนวนอน 16:9 และ 4:3 (โปรเจกเตอร์ ทีวี iPad แนวนอน): แสดงทั้งหมดในหน้าจอเดียว ตัวอักษรขยายตามความสูงจอ */
+@media (min-width: 1000px) and (min-aspect-ratio: 5/4) and (min-height: 600px) {
+  body { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; font-size: clamp(15px, 2.3vh, 28px); }
+  header { padding: 0.25em 0.8em 0.15em; gap: 0.6em; }
+  header h1 { font-size: 1.4em; }
+  header span { font-size: 0.85em; }
+  main { flex: 1 1 auto; min-height: 0; grid-template-columns: 14.5em minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+         gap: 0.5em; padding: 0.5em 0.6em; }
+  main > section { min-height: 0; overflow: hidden; }
+  .left { gap: 0.5em; min-height: 0; }
+  .card { padding: 0.35em 0.6em; }
+  .card h2 { font-size: 1.05em; margin-bottom: 0.15em; }
+  .card h2.sub { margin-top: 0.45em; }
+  label { margin-top: 0.2em; }
+  button { font-size: 0.95em; padding: 0.2em 0.4em; }
+  .toggles { gap: 0.25em; }
+  .toggles button, #play { font-size: 0.85em; padding: 0.1em 0.45em; }
+  #play { margin-top: 0.3em; }
+  input[type=range] { height: 1.3em; }
+  #status, .note { font-size: 0.72em; }
+  .note { margin-top: 0.3em; }
+  #sceneWrap { min-height: 0; }
+  .left > .card:last-child h2 { font-size: 0.95em; }
+  table { font-size: 0.8em; }
+  th, td { padding: 0 0.25em; }
+}
+@media (max-width: 1000px) {
+  main { grid-template-columns: 1fr; padding: 12px 16px; }
+  #sceneWrap { min-height: 520px; }
+}
+/* iPad แนวตั้ง: ตั้งค่าและตารางอยู่ซ้าย ฉากอยู่ขวา */
+@media (min-width: 700px) and (max-width: 1000px) {
+  main { grid-template-columns: 260px minmax(0, 1fr); gap: 12px; }
+  #sceneWrap { min-height: 0; height: max(560px, min(860px, calc(100vh - 110px))); align-self: start; }
+  body { font-size: 19px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>การไหลของของไหลในท่อ</h1>
+  <span>ฟิสิกส์ 2 (ว31112) · พลศาสตร์ของของไหล · ท่อแนวระดับที่มีส่วนกว้างและส่วนแคบ</span>
+</header>
+<!-- ข้อความนี้ถูกซ่อนเมื่อโปรแกรมเริ่มทำงานสำเร็จ ถ้ายังเห็นอยู่ แสดงว่าโปรแกรมไม่ทำงาน -->
+<div id="jsWarn">
+  <b>Simulation ยังไม่ทำงาน</b> <span id="jsMsg">เบราว์เซอร์นี้ไม่รันโปรแกรม ให้เปิดลิงก์ด้วย Safari หรือ Chrome หรือดูจากจอที่ครูฉาย</span>
+  <div id="jsErr"></div>
+</div>
+<script>
+// แสดงข้อผิดพลาดบนหน้าจอ เพื่อให้แจ้งผู้สอนได้ (ไม่มีหน้าต่าง console บน iPad)
+window.onerror = function (msg, src, line, col) {
+  var w = document.getElementById("jsWarn"), e = document.getElementById("jsErr");
+  if (!w || !e) return;
+  // คำเตือนของเบราว์เซอร์เรื่อง ResizeObserver ไม่ใช่ข้อผิดพลาดของโปรแกรม
+  if (String(msg).indexOf("ResizeObserver loop") >= 0) return true;
+  w.style.display = "block";
+  w.firstElementChild.textContent = "Simulation ทำงานผิดพลาด";
+  document.getElementById("jsMsg").textContent = "กรุณาถ่ายภาพหน้าจอนี้ส่งครู";
+  e.textContent = "ข้อผิดพลาด: " + msg + " (บรรทัด " + line + ":" + col + ") · " + navigator.userAgent;
+};
+</script>
+<main>
+  <section class="left">
+    <div class="card" aria-label="ตั้งค่า">
+      <h2>ท่อแนวระดับ</h2>
+      <label>พื้นที่หน้าตัดของส่วนแคบ A₂
+        <input type="range" id="a2" min="4" max="20" step="1" value="10" aria-label="พื้นที่หน้าตัดของส่วนแคบ">
+        <div class="readout"><span class="val" id="a2Out"></span></div></label>
+      <label>อัตราการไหล R
+        <input type="range" id="rate" min="0.2" max="1.0" step="0.05" value="0.6" aria-label="อัตราการไหล">
+        <div class="readout"><span class="val" id="rateOut"></span></div></label>
+      <p class="note">ส่วนกว้างมีพื้นที่หน้าตัด A₁ = 20 cm² คงที่</p>
+
+      <h2 class="sub">การแสดงผล</h2>
+      <div class="toggles">
+        <button id="tgNum">ค่าตัวเลข</button>
+        <button id="tgP">ความดัน (หลอดแนวตั้ง)</button>
+        <button id="tgE" disabled>ความดันและพลังงานจลน์ต่อปริมาตร</button>
+      </div>
+      <button id="play">❚❚ หยุดภาพ</button>
+
+      <h2 class="sub">บันทึกผล</h2>
+      <div class="btns">
+        <button id="rec">บันทึกค่า</button>
+        <button id="clr">ล้างตาราง</button>
+      </div>
+      <div id="status"></div>
+      <p class="note">ของไหลอุดมคติ: น้ำ ρ = 1.0 × 10³ kg/m³ · g = 9.8 m/s²<span id="pNote"></span></p>
+    </div>
+    <div class="card">
+      <h2>ค่าที่บันทึก</h2>
+      <div class="tblwrap"><table id="tbl"></table></div>
+    </div>
+  </section>
+
+  <section class="card" id="sceneWrap" aria-label="ท่อแนวระดับที่มีส่วนกว้างและส่วนแคบ"><canvas id="scene"></canvas></section>
+</main>
+
+<script>
+const G = 9.8, RHO = 1000;
+const A1 = 20;                 // พื้นที่หน้าตัดส่วนกว้าง (cm²)
+const H1 = 0.40;               // ความสูงของน้ำในหลอดเหนือส่วนกว้าง วัดจากแนวกลางท่อ (m)
+const P1 = RHO * G * H1;       // ความดันเกจที่ส่วนกว้าง (Pa) ตั้งไว้คงที่
+const TUBE_TOP = 0.45;         // ความสูงของปลายหลอดแนวตั้ง (m)
+const E_MAX = 4400;            // ค่าสูงสุดของแกนแท่งความดันและพลังงานจลน์ต่อปริมาตร (Pa)
+const $ = id => document.getElementById(id);
+
+let a2 = 10, rate = 0.6;       // A₂ (cm²) · R (× 10⁻³ m³/s)
+let showNum = false, showP = false, showE = false, running = true;
+let clock = 0;                 // เวลาของภาพเคลื่อนไหว (s)
+const rows = [];
+
+// ---------- ฟิสิกส์ ----------
+function state() {
+  const R = rate * 1e-3;                       // m³/s
+  const v1 = R / (A1 * 1e-4), v2 = R / (a2 * 1e-4);
+  const P2 = P1 - 0.5 * RHO * (v2 * v2 - v1 * v1);
+  return { R, v1, v2, P2, H2: P2 / (RHO * G), K1: 0.5 * RHO * v1 * v1, K2: 0.5 * RHO * v2 * v2 };
+}
+const f2 = x => x.toFixed(2);
+const fmtP = p => `${(p / 1000).toFixed(2)} × 10³`;
+const fmtR = r => `${f2(r)} × 10⁻³ m³/s`;
+
+// ---------- ส่วนควบคุม ----------
+function updateControls() {
+  $("a2Out").textContent = `${a2} cm²`;
+  $("rateOut").textContent = fmtR(rate);
+  $("tgNum").classList.toggle("on", showNum);
+  $("tgP").classList.toggle("on", showP);
+  $("tgE").classList.toggle("on", showE && showP);
+  $("tgE").disabled = !showP;
+  $("play").textContent = running ? "❚❚ หยุดภาพ" : "▶ เล่นต่อ";
+  $("pNote").textContent = showP ? " · ความดันเกจที่ส่วนกว้างตั้งไว้คงที่ (น้ำในหลอดสูง 40 cm จากแนวกลางท่อ)" : "";
+}
+$("a2").addEventListener("input", () => { a2 = +$("a2").value; updateControls(); });
+$("rate").addEventListener("input", () => { rate = +$("rate").value; updateControls(); });
+$("tgNum").onclick = () => { showNum = !showNum; updateControls(); };
+$("tgP").onclick = () => { showP = !showP; updateControls(); };
+$("tgE").onclick = () => { if (showP) { showE = !showE; updateControls(); } };
+$("play").onclick = () => { running = !running; updateControls(); };
+$("rec").onclick = () => {
+  const S = state();
+  const row = { a2, v2: +f2(S.v2), av: +f2(rate), p: showP ? { p1: P1, p2: S.P2 } : null, rate };
+  if (rows.some(r => r.a2 === row.a2 && r.rate === row.rate && !!r.p === !!row.p)) {
+    $("status").textContent = "บันทึกค่านี้ไว้แล้ว";
+  } else {
+    rows.push(row);
+    $("status").textContent = `บันทึกแล้ว: A₂ = ${a2} cm² · v₂ = ${f2(S.v2)} m/s`;
+  }
+  buildTable();
+};
+$("clr").onclick = () => { rows.length = 0; $("status").textContent = ""; buildTable(); };
+
+function buildTable() {
+  const withP = rows.some(r => r.p);
+  const cols = withP ? 5 : 3;
+  if (!rows.length) { $("tbl").innerHTML = `<tr><td class="empty" colspan="${cols}">ยังไม่มีค่าที่บันทึก</td></tr>`; return; }
+  let html = "<tr><th>A₂<small>cm²</small></th><th>v₂<small>m/s</small></th><th>A₂v₂<small>× 10⁻³ m³/s</small></th>";
+  if (withP) html += "<th>P₁<small>× 10³ Pa</small></th><th>P₂<small>× 10³ Pa</small></th>";
+  html += "</tr>";
+  rows.forEach(r => {
+    html += `<tr><td>${r.a2}</td><td>${f2(r.v2)}</td><td>${f2(r.av)}</td>`;
+    if (withP) html += r.p ? `<td>${f2(r.p.p1 / 1000)}</td><td>${f2(r.p.p2 / 1000)}</td>` : "<td>–</td><td>–</td>";
+    html += "</tr>";
+  });
+  $("tbl").innerHTML = html;
+}
+
+// ---------- การวาด ----------
+const C = {};   // สีจากธีม อ่านใหม่เมื่อขนาดจอหรือธีมเปลี่ยน
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  ["--primary", "--secondary", "--accent", "--alert", "--ink", "--muted", "--card", "--line",
+   "--glass-edge", "--water", "--dot", "--dot-hi", "--bar-p", "--bar-k"].forEach(k => { C[k.slice(2)] = cs.getPropertyValue(k).trim(); });
+}
+function fitCanvas(c) {
+  const dpr = window.devicePixelRatio || 1, rect = c.getBoundingClientRect();
+  const w = Math.max(1, Math.round(rect.width)), hh = Math.max(1, Math.round(rect.height));
+  if (c.width !== w * dpr || c.height !== hh * dpr) { c.width = w * dpr; c.height = hh * dpr; }
+  const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h: hh };
+}
+const FONT = '"THSarabunLocal", "Sarabun", sans-serif';
+const LANDSCAPE = window.matchMedia("(min-width: 1000px) and (min-aspect-ratio: 5/4) and (min-height: 600px)");
+let FS = 1;
+function updateFS() { FS = LANDSCAPE.matches ? Math.max(0.95, Math.min(1.45, window.innerHeight / 760)) : 1; }
+const font = (size, weight = 400) => `${weight} ${Math.round(size * FS)}px ${FONT}`;
+function fitText(ctx, s, x, y, maxW, size, weight = 400, align = "center") {
+  let fs = Math.round(size * FS);
+  do { ctx.font = `${weight} ${fs}px ${FONT}`; } while (ctx.measureText(s).width > maxW && --fs > 11);
+  ctx.textAlign = align; ctx.fillText(s, x, y);
+}
+function roundRect(ctx, x, y, w, hh, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + hh, r); ctx.arcTo(x + w, y + hh, x, y + hh, r);
+  ctx.arcTo(x, y + hh, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+// ลูกศรแนวนอนจาก x0 ไป x1
+function hArrow(ctx, x0, x1, y, col, lw = 4) {
+  const head = Math.min(14, Math.max(7, (x1 - x0) * 0.6));
+  ctx.strokeStyle = ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineCap = "round";
+  if (x1 - x0 > head) { ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1 - head + 2, y); ctx.stroke(); }
+  ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x1 - head, y - head * 0.55); ctx.lineTo(x1 - head, y + head * 0.55); ctx.closePath(); ctx.fill();
+  ctx.lineCap = "butt";
+}
+// ลูกศรสองหัวในแนวดิ่ง
+function dimArrow(ctx, x, y0, y1, col) {
+  ctx.strokeStyle = ctx.fillStyle = col; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+  if (Math.abs(y1 - y0) < 12) return;
+  const d = y1 > y0 ? 1 : -1;
+  [[y0, d], [y1, -d]].forEach(([y, s]) => {
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 4, y + s * 8); ctx.lineTo(x + 4, y + s * 8); ctx.closePath(); ctx.fill();
+  });
+}
+
+// รูปร่างท่อ: ส่วนกว้าง → ส่วนเรียว → ส่วนแคบ → ส่วนบาน → ส่วนกว้าง (สัดส่วนตามความยาวท่อ)
+const SEC = { a: 0.30, b: 0.40, c: 0.66, d: 0.76, p1: 0.15, p2: 0.53 };
+function makePipe(xL, xR, r1) {
+  const span = xR - xL, X = f => xL + f * span;
+  const xa = X(SEC.a), xb = X(SEC.b), xc = X(SEC.c), xd = X(SEC.d);
+  const r2 = r1 * Math.sqrt(a2 / A1);       // ท่อหน้าตัดวงกลม: เส้นผ่านศูนย์กลางแปรตามรากที่สองของพื้นที่
+  const ease = t => (1 - Math.cos(Math.PI * t)) / 2;
+  const r = x => x <= xa || x >= xd ? r1 : x >= xb && x <= xc ? r2
+    : x < xb ? r1 + (r2 - r1) * ease((x - xa) / (xb - xa)) : r2 + (r1 - r2) * ease((x - xc) / (xd - xc));
+  return { xL, xR, span, r, r1, r2, x1: X(SEC.p1), x2: X(SEC.p2), xd };
+}
+// ตารางเวลาเดินทางตามแนวท่อ ใช้หาตำแหน่งของแถวอนุภาคจากเวลาที่ไหลเข้าท่อ
+function travelTable(pipe, v1px) {
+  const N = 500, xs = new Float64Array(N + 1), ts = new Float64Array(N + 1);
+  const dx = pipe.span / N;
+  for (let i = 0; i <= N; i++) {
+    xs[i] = pipe.xL + i * dx;
+    if (i) { const xm = xs[i] - dx / 2, ratio = (pipe.r(xm) / pipe.r1) ** 2; ts[i] = ts[i - 1] + dx * ratio / v1px; }
+  }
+  return { xs, ts, T: ts[N] };
+}
+function xAtTime(tab, t) {
+  let lo = 0, hi = tab.ts.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (tab.ts[m] <= t) lo = m; else hi = m; }
+  const f = (t - tab.ts[lo]) / (tab.ts[hi] - tab.ts[lo] || 1);
+  return tab.xs[lo] + f * (tab.xs[hi] - tab.xs[lo]);
+}
+
+function drawScene() {
+  const { ctx, w, h: H } = fitCanvas($("scene"));
+  ctx.clearRect(0, 0, w, H);
+  const S = state(), wantE = showP && showE;
+  ctx.textBaseline = "alphabetic";
+
+  // ----- จัดพื้นที่แนวดิ่ง -----
+  const rowH = 26 * FS;
+  const topH = showNum ? 66 * FS : 10;
+  const belowH = rowH * (showNum ? 4 : 2) + 14;
+  const energyH = wantE ? Math.min(250 * FS, Math.max(180, H * 0.30)) : 0;
+  const D = Math.max(46, Math.min(showP ? 96 : 130, H * (showP ? 0.11 : 0.16))), r1 = D / 2;
+  let yAxis, s = 0, yTubeTop = 0;
+  if (showP) {
+    const pLab = showNum ? 34 * FS : 8;
+    s = Math.max(150, (H - topH - pLab - r1 - belowH - energyH - 12) / TUBE_TOP);    // px ต่อเมตร
+    yTubeTop = topH + pLab;
+    yAxis = yTubeTop + TUBE_TOP * s;
+  } else {
+    yAxis = topH + (H - topH - belowH - energyH) / 2 - belowH * 0.15;
+  }
+  const xL = 0.04 * w, xR = 0.96 * w;
+  const pipe = makePipe(xL, xR, r1);
+
+  // ----- ท่อและน้ำ -----
+  ctx.fillStyle = C.water;
+  ctx.beginPath();
+  for (let x = xL; x <= xR; x += 2) ctx.lineTo(x, yAxis - pipe.r(x));
+  for (let x = xR; x >= xL; x -= 2) ctx.lineTo(x, yAxis + pipe.r(x));
+  ctx.closePath(); ctx.fill();
+
+  // ----- อนุภาคน้ำ: แถวของอนุภาคไหลเข้าท่อเป็นช่วงเวลาเท่ากัน -----
+  const v1px = S.v1 * 0.12 * pipe.span;                // อัตราเร็วบนจอแปรตามอัตราเร็วจริง
+  const tab = travelTable(pipe, v1px);
+  const dtCol = 30 / v1px;                             // ระยะห่างของแถวในส่วนกว้าง 30 px
+  const mHi = Math.floor(clock / dtCol), mLo = Math.ceil((clock - tab.T) / dtCol);
+  const lanes = 7, dotR = Math.max(2.5, D * 0.045);
+  for (let m = mLo; m <= mHi; m++) {
+    const x = xAtTime(tab, clock - m * dtCol), rr = pipe.r(x);
+    ctx.fillStyle = m % 5 === 0 ? C["dot-hi"] : C.dot;
+    for (let k = 0; k < lanes; k++) {
+      const sy = -0.8 + 1.6 * k / (lanes - 1);
+      ctx.beginPath(); ctx.arc(x, yAxis + sy * rr, dotR, 0, 7); ctx.fill();
+    }
+  }
+
+  // ผนังท่อ
+  ctx.strokeStyle = C["glass-edge"]; ctx.lineWidth = 3;
+  [-1, 1].forEach(sg => {
+    ctx.beginPath();
+    for (let x = xL; x <= xR; x += 2) ctx.lineTo(x, yAxis + sg * pipe.r(x));
+    ctx.stroke();
+  });
+
+  // ----- หลอดแนวตั้ง -----
+  if (showP) {
+    const tw = Math.max(14, Math.min(22, D * 0.26));
+    const levels = [[pipe.x1, H1, "P₁", P1], [pipe.x2, S.H2, "P₂", S.P2]];
+    levels.forEach(([x, hh]) => {
+      const yWall = yAxis - pipe.r(x), yLev = Math.min(yWall, yAxis - hh * s);
+      ctx.fillStyle = C.card; ctx.fillRect(x - tw / 2, yTubeTop, tw, yWall - yTubeTop);
+      ctx.fillStyle = C.water; ctx.fillRect(x - tw / 2, yLev, tw, yWall - yLev + 3);
+      ctx.strokeStyle = C["glass-edge"]; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(x - tw / 2, yTubeTop); ctx.lineTo(x - tw / 2, yWall + 1);
+      ctx.moveTo(x + tw / 2, yTubeTop); ctx.lineTo(x + tw / 2, yWall + 1); ctx.stroke();
+      // ผิวน้ำในหลอด
+      ctx.strokeStyle = C.dot; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x - tw / 2, yLev); ctx.lineTo(x + tw / 2, yLev); ctx.stroke();
+    });
+    // สเกลความสูงข้างหลอดที่ส่วนกว้าง (cm วัดจากแนวกลางท่อ) แสดงเฉพาะส่วนที่อยู่เหนือท่อ
+    const xr = pipe.x1 - tw / 2 - 8;
+    ctx.strokeStyle = C.ink; ctx.fillStyle = C.ink; ctx.lineWidth = 1; ctx.font = font(14);
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    const yMin = yAxis - r1 - 4;
+    for (let c = 0; c <= TUBE_TOP * 100; c++) {
+      const yy = yAxis - c * 0.01 * s;
+      if (yy > yMin) continue;
+      const len = c % 10 === 0 ? 10 : c % 5 === 0 ? 7 : 3;
+      ctx.beginPath(); ctx.moveTo(xr, yy); ctx.lineTo(xr - len, yy); ctx.stroke();
+      if (c % 10 === 0) ctx.fillText(c, xr - 13, yy);
+    }
+    ctx.textBaseline = "alphabetic"; ctx.textAlign = "right";
+    ctx.fillText("cm", xr - 13, yAxis - 0.40 * s - 14);
+    // ระดับน้ำสองหลอดและผลต่าง
+    const yL1 = yAxis - H1 * s, yL2 = Math.min(yAxis - pipe.r(pipe.x2), yAxis - S.H2 * s);
+    const xDim = pipe.x2 + tw / 2 + 16;
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = C.alert; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(pipe.x1 + tw / 2, yL1); ctx.lineTo(xDim + 8, yL1);
+    ctx.moveTo(pipe.x2 + tw / 2, yL2); ctx.lineTo(xDim + 8, yL2); ctx.stroke(); ctx.setLineDash([]);
+    if (yL2 - yL1 > 3) dimArrow(ctx, xDim, yL1, yL2, C.alert);
+    if (showNum) {
+      ctx.fillStyle = C.alert; ctx.textBaseline = "middle";
+      fitText(ctx, `ต่างกัน ${((H1 - S.H2) * 100).toFixed(1)} cm`, xDim + 12, (yL1 + yL2) / 2, w * 0.3, 18, 700, "left");
+      // ความดันเกจเหนือปลายหลอด
+      ctx.textBaseline = "alphabetic";
+      levels.forEach(([x, , name, P]) => {
+        ctx.fillStyle = C.primary;
+        fitText(ctx, `${name} = ${fmtP(P)} Pa`, x, yTubeTop - 10, w * 0.3, 20, 700);
+      });
+    }
+  }
+
+  // ----- ใต้ท่อ: ชื่อส่วน ลูกศรความเร็ว และค่าตัวเลข -----
+  const yB = yAxis + r1 + 8;
+  const sects = [[pipe.x1, "ส่วนกว้าง", `A₁ = ${A1} cm²`, S.v1, "v₁", "A₁v₁", A1],
+                 [pipe.x2, "ส่วนแคบ", `A₂ = ${a2} cm²`, S.v2, "v₂", "A₂v₂", a2]];
+  const arrowK = 0.07 * pipe.span;                     // ความยาวลูกศรต่อ 1 m/s
+  sects.forEach(([x, name, area, v, vn, avn, A]) => {
+    let y = yB + rowH * 0.8;
+    ctx.fillStyle = C.ink; ctx.textBaseline = "alphabetic";
+    fitText(ctx, `${name}  ${area}`, x, y, w * 0.32, 20, 700);
+    y += rowH * 0.75;
+    const len = v * arrowK;
+    hArrow(ctx, x - len / 2, x + len / 2, y, C.accent);
+    if (showNum) {
+      y += rowH * 1.0;
+      ctx.fillStyle = C.accent;
+      fitText(ctx, `${vn} = ${f2(v)} m/s`, x, y, w * 0.32, 20, 700);
+      y += rowH;
+      ctx.fillStyle = C.secondary;
+      fitText(ctx, `${avn} = ${f2(A * 1e-4 * v * 1e3)} × 10⁻³ m³/s`, x, y, w * 0.34, 18, 700);
+    }
+  });
+  // ทิศการไหลและชนิดของไหล (ด้านขวาใต้ท่อ)
+  const xo = (pipe.xd + xR) / 2;
+  ctx.fillStyle = C.muted;
+  fitText(ctx, "ทิศการไหล", xo, yB + rowH * 0.8, w * 0.18, 18);
+  hArrow(ctx, xo - 26, xo + 26, yB + rowH * 1.55, C.muted, 3);
+  if (showNum) fitText(ctx, "ของไหลอุดมคติ", xo, yB + rowH * 2.8, w * 0.18, 17);
+
+  // ----- อัตราการไหล (ส่วนบน) -----
+  if (showNum) {
+    const bw = Math.min(w * 0.6, 380 * FS), bh = topH - 14, bx = w / 2;
+    roundRect(ctx, bx - bw / 2, 6, bw, bh, 8); ctx.fillStyle = C.card; ctx.fill();
+    ctx.strokeStyle = C.secondary; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = C.muted; fitText(ctx, "อัตราการไหล (ปริมาตรที่ผ่านพื้นที่หน้าตัดในหนึ่งวินาที)", bx, 6 + bh * 0.4, bw - 12, 16);
+    ctx.fillStyle = C.secondary; fitText(ctx, `R = ${fmtR(rate)}`, bx, 6 + bh * 0.88, bw - 12, 26, 700);
+  }
+
+  // ----- แท่งความดันเกจและพลังงานจลน์ต่อหนึ่งหน่วยปริมาตร -----
+  if (wantE) {
+    const y0 = yB + belowH + 4, yBase = y0 + energyH - 10;
+    // คำอธิบายสี: เรียงเป็นแถวใต้หัวข้อ ขึ้นบรรทัดใหม่เมื่อไม่พอ
+    const legend = [[C["bar-p"], "ความดันเกจ P"], [C["bar-k"], "พลังงานจลน์ต่อปริมาตร ½ρv²"],
+                    [null, showNum ? `ผลรวม P + ½ρv² = ${fmtP(P1 + S.K1)}` : "ผลรวม P + ½ρv²"]];
+    ctx.font = font(16); ctx.textBaseline = "middle"; ctx.textAlign = "left";
+    let lx = xL, ly = y0 + 34 * FS;
+    legend.forEach(([col, txt]) => {
+      const iw = 20 + ctx.measureText(txt).width + 18;
+      if (lx > xL && lx + iw > xR) { lx = xL; ly += 22 * FS; }
+      if (col) { ctx.fillStyle = col; ctx.fillRect(lx, ly - 7, 14, 14); }
+      else { ctx.setLineDash([6, 4]); ctx.strokeStyle = C.ink; ctx.lineWidth = 1.3;
+             ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 14, ly); ctx.stroke(); ctx.setLineDash([]); }
+      ctx.fillStyle = C.ink; ctx.fillText(txt, lx + 20, ly);
+      lx += iw;
+    });
+    ctx.textBaseline = "alphabetic";
+    const top = ly + 30 * FS;
+    const k = (yBase - top) / E_MAX, bw = Math.max(58, Math.min(72, w * 0.08));
+    ctx.fillStyle = C.ink; ctx.textBaseline = "alphabetic";
+    fitText(ctx, "ความดันเกจ + พลังงานจลน์ต่อหนึ่งหน่วยปริมาตร (Pa = J/m³)", w / 2, y0 + 18 * FS, w * 0.92, 18, 700);
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(xL, yBase); ctx.lineTo(xR, yBase); ctx.stroke();
+    const bars = [[pipe.x1, P1, S.K1], [pipe.x2, S.P2, S.K2]];
+    bars.forEach(([x, P, K]) => {
+      const hp = P * k, hk = K * k;
+      ctx.fillStyle = C["bar-p"]; ctx.fillRect(x - bw / 2, yBase - hp, bw, hp);
+      ctx.fillStyle = C["bar-k"]; ctx.fillRect(x - bw / 2, yBase - hp - hk, bw, hk);
+      if (showNum) {
+        ctx.textBaseline = "middle";
+        if (hp > 26 * FS) { ctx.fillStyle = "#fff"; fitText(ctx, fmtP(P), x, yBase - hp / 2, bw - 4, 15, 700); }
+        ctx.fillStyle = C["bar-k"]; fitText(ctx, `½ρv² = ${fmtP(K)}`, x + bw / 2 + 6, hk < 24 * FS ? yBase - hp - hk - 12 * FS : yBase - hp - hk / 2, w * 0.2, 16, 700, "left");
+        ctx.textBaseline = "alphabetic";
+      }
+    });
+    // เส้นผลรวม: เท่ากันทั้งสองส่วน
+    const yTot = yBase - (P1 + S.K1) * k;
+    ctx.setLineDash([6, 4]); ctx.strokeStyle = C.ink; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(pipe.x1 - bw / 2 - 6, yTot); ctx.lineTo(pipe.x2 + bw / 2 + 6, yTot); ctx.stroke(); ctx.setLineDash([]);
+    ctx.textBaseline = "alphabetic";
+  }
+}
+
+// ---------- วนรอบภาพเคลื่อนไหว ----------
+let last = 0;
+function frame(ts) {
+  const dt = last ? Math.min(0.05, (ts - last) / 1000) : 0;
+  last = ts;
+  if (running) clock += dt;
+  drawScene();
+  requestAnimationFrame(frame);
+}
+function draw() { updateFS(); readColors(); drawScene(); }
+updateControls(); buildTable(); draw();
+requestAnimationFrame(frame);
+// อ่านสีและขนาดตัวอักษรใหม่เมื่อขนาดจอหรือธีมเปลี่ยน (Safari รุ่นเก่าไม่มี ResizeObserver)
+if (window.ResizeObserver) new ResizeObserver(draw).observe(document.body);
+window.addEventListener("resize", draw);
+window.addEventListener("orientationchange", () => setTimeout(draw, 300));
+if (window.matchMedia) {
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  if (mq.addEventListener) mq.addEventListener("change", draw);
+}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+document.getElementById("jsWarn").style.display = "none";
+</script>
+</body>
+</html>
